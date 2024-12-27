@@ -220,7 +220,7 @@ app.get('/api/download/:credential/:fileId', async (req, res) => {
 
 // 启动服务器
 initServer().then(() => {
-  app.listen(3000, () => {
+  app.listen(3000, '0.0.0.0', () => {
     console.log('Server running on port 3000')
   })
 })

@@ -5,3 +5,6 @@
 .env.local
 .env.*.local
 .env
+data.json
+package-lock.json
+dist
