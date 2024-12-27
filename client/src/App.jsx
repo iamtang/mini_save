@@ -90,6 +90,11 @@ function App() {
       
       // 创建一个临时的文件记录
       const tempFileId = Date.now()
+      // 添加上传开始时间和上次更新时间
+      const startTime = Date.now()
+      let lastUpdate = startTime
+      let lastLoaded = 0
+
       setContents(prev => ({
         ...prev,
         files: [{
@@ -97,9 +102,12 @@ function App() {
           filename: file.name,
           timestamp: new Date().toISOString(),
           uploading: true,
-          progress: 0
+          progress: 0,
+          speed: '0 KB/s',  // 添加速率字段
+          size: file.size   // 添加文件大小
         }, ...prev.files]
       }))
+
       // 滚动到顶部
       if (contentRef.current) {
         contentRef.current.scrollTo({
@@ -110,15 +118,31 @@ function App() {
       
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100)
-          setContents(prev => ({
-            ...prev,
-            files: prev.files.map(f => 
-              f.id === tempFileId 
-                ? { ...f, progress }
-                : f
-            )
-          }))
+          const currentTime = Date.now()
+          const timeElapsed = currentTime - lastUpdate
+          
+          // 每200ms更新一次速率
+          if (timeElapsed >= 200) {
+            const loaded = event.loaded - lastLoaded
+            const speed = (loaded / timeElapsed) * 1000 // 转换为每秒的字节数
+            
+            // 格式化速率
+            const formattedSpeed = formatSpeed(speed)
+            
+            const progress = Math.round((event.loaded / event.total) * 100)
+            setContents(prev => ({
+              ...prev,
+              files: prev.files.map(f => 
+                f.id === tempFileId 
+                  ? { ...f, progress, speed: formattedSpeed }
+                  : f
+              )
+            }))
+            
+            // 更新上次的数据
+            lastUpdate = currentTime
+            lastLoaded = event.loaded
+          }
         }
       }
 
@@ -152,6 +176,20 @@ function App() {
     } catch (error) {
       console.error('Upload error:', error)
     }
+  }
+
+  // 添加格式化速率的函数
+  const formatSpeed = (bytesPerSecond) => {
+    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s']
+    let speed = bytesPerSecond
+    let unitIndex = 0
+    
+    while (speed >= 1024 && unitIndex < units.length - 1) {
+      speed /= 1024
+      unitIndex++
+    }
+    
+    return `${speed.toFixed(1)} ${units[unitIndex]}`
   }
 
   const handleDeleteText = async (id) => {
