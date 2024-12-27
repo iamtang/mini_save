@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { LogoutIcon } from './Icons'
 
 const Header = ({ credential, onLogout }) => {
   const [showToast, setShowToast] = useState(false)
   const timeoutRef = useRef(null)
-  const tapCountRef = useRef(0)
   const lastTapRef = useRef(0)
 
   // 显示 Toast
@@ -18,39 +17,21 @@ const Header = ({ credential, onLogout }) => {
     }, 2000)
   }
 
-  // 处理移动端双触
+  // 处理移动端双击
   const handleTouchStart = () => {
     const now = Date.now()
-    if (now - lastTapRef.current < 300) {
+    if (now - lastTapRef.current < 300) { // 300ms 内的双击
       showCredential()
-      tapCountRef.current = 0
-    } else {
-      tapCountRef.current = 1
     }
     lastTapRef.current = now
   }
-
-  // 处理 PC 端双击
-  const handleDoubleClick = (e) => {
-    e.preventDefault() // 防止文本选中
-    showCredential()
-  }
-
-  // 清理定时器
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [])
 
   return (
     <header className="header">
       <div className="header-content">
         <h1 
           className="app-title" 
-          onDoubleClick={handleDoubleClick}
+          onDoubleClick={showCredential}
           onTouchStart={handleTouchStart}
         >
           迷你仓
