@@ -24,7 +24,7 @@ const Login = ({ setCredential, onLogin }) => {
   const handleInput = (index, value) => {
     // 过滤掉空格
     value = value.replace(/\s/g, '')
-    if (!value) return  // 如果过滤后为空，直接返回
+    // if (!value) return  // 如果过滤后为空，直接返回
 
     const newCode = [...code]
     newCode[index] = value
