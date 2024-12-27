@@ -43,7 +43,7 @@ const ContentItem = ({ item, onCopy, onDelete, onDownload, escapeHtml, formatFil
           <span className="filename">{item.filename}</span>
           <span className="file-size">
             {item.uploading 
-              ? `${item.speed} - ${item.progress}%` 
+              ? `${item.speed}` 
               : formatFileSize(item.size)}
           </span>
         </div>
