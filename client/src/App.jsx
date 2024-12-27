@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
 import './App.css'
 import Login from './components/Login'
 import Header from './components/Header'
@@ -8,42 +8,19 @@ import InputSection from './components/InputSection'
 function App() {
   const [credential, setCredential] = useState(localStorage.getItem('credential') || '')
   const [isAuth, setIsAuth] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [text, setText] = useState('')
   const [contents, setContents] = useState({ texts: [], files: [] })
   const [copyStatus, setCopyStatus] = useState('')
   const [uploadProgress, setUploadProgress] = useState(null)
   const contentRef = useRef(null)
-  const lastScrollTimeRef = useRef(0)
-
-  // 滚动到底部的函数
-  const scrollToBottom = () => {
-    if (contentRef.current) {
-      contentRef.current.scrollTo({
-        top: contentRef.current.scrollHeight,
-        behavior: 'smooth'
-      })
-      lastScrollTimeRef.current = Date.now()
-    }
-  }
-
-  // 登录后滚动到底部
-  useEffect(() => {
-    if (isAuth) {
-      setTimeout(scrollToBottom, 100)
-    }
-  }, [isAuth])
-
-  // 定时刷新内容
-  useEffect(() => {
-    if (isAuth) {
-      const timer = setInterval(fetchContents, 5000)
-      return () => clearInterval(timer)
-    }
-  }, [isAuth])
+  const lastSeenTimeRef = useRef(0)
 
   useEffect(() => {
     if (credential) {
       checkAuth()
+    } else {
+      setIsLoading(false)
     }
   }, [])
 
@@ -59,6 +36,8 @@ function App() {
       fetchContents()
     } catch (error) {
       console.error('Auth error:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -68,22 +47,22 @@ function App() {
       const data = await response.json()
       
       // 检查是否有新记录
-      const oldLatestTime = Math.max(
-        ...[...contents.texts, ...contents.files].map(item => new Date(item.timestamp).getTime()),
-        0
-      )
       const newLatestTime = Math.max(
         ...[...data.texts, ...data.files].map(item => new Date(item.timestamp).getTime()),
         0
       )
-      
-      // 只有当有新内容且这个新内容的时间戳大于上次滚动的时间戳时才滚动
-      const shouldScroll = newLatestTime > oldLatestTime && newLatestTime > lastScrollTimeRef.current
 
       setContents(data)
       
-      if (shouldScroll) {
-        setTimeout(scrollToBottom, 100)
+      // 只有当有新内容且比上次看到的更新时才滚动
+      if (newLatestTime > lastSeenTimeRef.current) {
+        if (contentRef.current) {
+          contentRef.current.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          })
+        }
+        lastSeenTimeRef.current = newLatestTime
       }
     } catch (error) {
       console.error('Fetch error:', error)
@@ -103,10 +82,16 @@ function App() {
       // 重置 textarea 高度
       const textarea = document.querySelector('textarea')
       if (textarea) {
-        textarea.style.height = '20px'
+        textarea.style.height = '42px'
       }
       await fetchContents()
-      setTimeout(scrollToBottom, 100)
+      // 滚动到顶部
+      if (contentRef.current) {
+        contentRef.current.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })
+      }
     } catch (error) {
       console.error('Submit error:', error)
     }
@@ -134,7 +119,13 @@ function App() {
           progress: 0
         }, ...prev.files]
       }))
-      scrollToBottom()
+      // 滚动到顶部
+      if (contentRef.current) {
+        contentRef.current.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })
+      }
       
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -229,7 +220,7 @@ function App() {
           return
         }
       }
-      setCopyStatus('已复制！')
+      setCopyStatus('已复制')
       setTimeout(() => setCopyStatus(''), 2000)
     } catch (err) {
       console.error('复制失败:', err)
@@ -276,6 +267,18 @@ function App() {
 
   const handleDownload = (id) => {
     window.location.href = `http://10.4.99.195:3000/api/download/${credential}/${id}`
+  }
+
+  // 定时刷新内容
+  useEffect(() => {
+    if (isAuth) {
+      const timer = setInterval(fetchContents, 5000)
+      return () => clearInterval(timer)
+    }
+  }, [isAuth])
+
+  if (isLoading) {
+    return null
   }
 
   if (!isAuth) {

@@ -8,12 +8,12 @@ const ContentSection = ({
   onDownload,
   escapeHtml,
   formatFileSize,
-  contentRef 
+  contentRef
 }) => {
   return (
     <div className="content-section" ref={contentRef}>
       {[...contents.texts, ...contents.files]
-        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .map(item => (
           <ContentItem
             key={item.id}

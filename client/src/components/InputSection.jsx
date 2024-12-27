@@ -19,7 +19,7 @@ const InputSection = ({ text, setText, onSubmit, onFileUpload, adjustTextareaHei
             setText(e.target.value)
             adjustTextareaHeight(e)
           }}
-          placeholder="输入要存储的文本，按 Ctrl/Command + Enter 发送"
+          placeholder="Ctrl/Command + Enter 发送"
           onKeyDown={(e) => {
             // 如果是在输入法编辑状态，不处理任何快捷键
             if (e.isComposing) {
