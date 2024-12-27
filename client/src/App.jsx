@@ -26,7 +26,7 @@ function App() {
 
   const checkAuth = async () => {
     try {
-      await fetch('http://10.4.99.195:3000/api/auth', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential })
@@ -43,7 +43,7 @@ function App() {
 
   const fetchContents = async () => {
     try {
-      const response = await fetch(`http://10.4.99.195:3000/api/content/${credential}`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/content/${credential}`)
       const data = await response.json()
       
       // 检查是否有新记录
@@ -73,7 +73,7 @@ function App() {
     if (!text.trim()) return
     
     try {
-      await fetch(`http://10.4.99.195:3000/api/text/${credential}`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/text/${credential}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
@@ -163,7 +163,7 @@ function App() {
         }))
       }
 
-      xhr.open('POST', `http://10.4.99.195:3000/api/upload/${credential}`)
+      xhr.open('POST', `${import.meta.env.VITE_API_URL}/api/upload/${credential}`)
       xhr.send(formData)
       
       // 清空文件输入框
@@ -175,7 +175,7 @@ function App() {
 
   const handleDeleteText = async (id) => {
     try {
-      await fetch(`http://10.4.99.195:3000/api/text/${credential}/${id}`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/text/${credential}/${id}`, {
         method: 'DELETE'
       })
       fetchContents()
@@ -186,7 +186,7 @@ function App() {
 
   const handleDeleteFile = async (id) => {
     try {
-      await fetch(`http://10.4.99.195:3000/api/file/${credential}/${id}`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/file/${credential}/${id}`, {
         method: 'DELETE'
       })
       fetchContents()
@@ -266,7 +266,7 @@ function App() {
   }
 
   const handleDownload = (id) => {
-    window.location.href = `http://10.4.99.195:3000/api/download/${credential}/${id}`
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/download/${credential}/${id}`
   }
 
   // 定时刷新内容
