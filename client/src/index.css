@@ -252,7 +252,7 @@ small {
 }
 
 .input-container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   gap: 1rem;
@@ -377,7 +377,7 @@ textarea:focus {
 
 .auth-container input {
   width: 100%;
-  max-width: 300px;
+  max-width: 30px;
   padding: 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
