@@ -6,40 +6,89 @@ import { promises as fsPromises } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const DATA_FILE = path.join(__dirname, 'data.json')
+const DATA_DIR = path.join(__dirname, 'data')
 const UPLOADS_DIR = path.join(__dirname, 'uploads')
 
-// 确保上传目录存在
+// 存储数据的对象
+let storage_data = {}
+
+// 确保必要目录存在
 async function ensureDirectories() {
-  try {
-    await fsPromises.access(UPLOADS_DIR)
-  } catch {
-    await fsPromises.mkdir(UPLOADS_DIR, { recursive: true })
+  const dirs = [UPLOADS_DIR, DATA_DIR]
+  for (const dir of dirs) {
+    try {
+      await fsPromises.access(dir)
+    } catch {
+      await fsPromises.mkdir(dir, { recursive: true })
+    }
   }
 }
 
-// 加载持久化数据
-async function loadData() {
+// 确保用户目录存在
+async function ensureUserDirectory(credential) {
+  const userDir = path.join(UPLOADS_DIR, credential)
   try {
-    const data = await fsPromises.readFile(DATA_FILE, 'utf8')
+    await fsPromises.access(userDir)
+  } catch {
+    await fsPromises.mkdir(userDir, { recursive: true })
+  }
+  return userDir
+}
+
+// 获取用户数据文件路径
+function getUserDataPath(credential) {
+  return path.join(DATA_DIR, `${credential}.json`)
+}
+
+// 加载用户数据
+async function loadUserData(credential) {
+  try {
+    const dataPath = getUserDataPath(credential)
+    const data = await fsPromises.readFile(dataPath, 'utf8')
     return JSON.parse(data)
+  } catch {
+    return { texts: [], files: [] }
+  }
+}
+
+// 保存用户数据
+async function saveUserData(credential, data) {
+  const dataPath = getUserDataPath(credential)
+  await fsPromises.writeFile(dataPath, JSON.stringify(data, null, 2), 'utf8')
+}
+
+// 加载所有用户数据
+async function loadAllData() {
+  try {
+    const files = await fsPromises.readdir(DATA_DIR)
+    const data = {}
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const credential = path.basename(file, '.json')
+        data[credential] = await loadUserData(credential)
+      }
+    }
+    return data
   } catch {
     return {}
   }
 }
 
-// 保存数据到文件
-async function saveData(data) {
-  await fsPromises.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8')
-}
-
 const app = express()
+app.use(cors())
+app.use(express.json())
 
 // 配置 multer 来保留原始文件名
 const storage = multer.diskStorage({
-  destination: UPLOADS_DIR,
+  destination: async (req, file, cb) => {
+    try {
+      const userDir = await ensureUserDirectory(req.params.credential)
+      cb(null, userDir)
+    } catch (error) {
+      cb(error)
+    }
+  },
   filename: (req, file, cb) => {
     // 解决中文文件名问题
     const originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
@@ -54,32 +103,20 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
-app.use(cors())
-app.use(express.json())
-
-// 存储数据的对象
-let storage_data = {}
-
-// 初始化服务器
-async function initServer() {
-  await ensureDirectories()
-  storage_data = await loadData()
-}
-
+// API 路由
 app.post('/api/auth', async (req, res) => {
   const { credential } = req.body
   if (!storage_data[credential]) {
-    storage_data[credential] = { texts: [], files: [] }
-    await saveData(storage_data)
+    storage_data[credential] = await loadUserData(credential)
+    await ensureUserDirectory(credential)
   }
   res.json({ success: true })
 })
 
-app.get('/api/content/:credential', (req, res) => {
+app.get('/api/content/:credential', async (req, res) => {
   const { credential } = req.params
-  const userData = storage_data[credential] || { texts: [], files: [] }
+  const userData = await loadUserData(credential)
   
-  // 按时间戳倒序排序
   const sortedData = {
     texts: [...userData.texts].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
     files: [...userData.files].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -91,18 +128,16 @@ app.get('/api/content/:credential', (req, res) => {
 app.post('/api/text/:credential', async (req, res) => {
   const { credential } = req.params
   const { text } = req.body
-  
-  if (!storage_data[credential]) {
-    storage_data[credential] = { texts: [], files: [] }
-  }
-  
-  storage_data[credential].texts.unshift({
+
+  const userData = await loadUserData(credential)
+  userData.texts.unshift({
     id: Date.now(),
     content: text,
     timestamp: new Date().toISOString()
   })
-  
-  await saveData(storage_data)
+
+  await saveUserData(credential, userData)
+  storage_data[credential] = userData
   res.json({ success: true })
 })
 
@@ -112,14 +147,14 @@ app.delete('/api/text/:credential/:id', async (req, res) => {
   if (!storage_data[credential]) {
     return res.status(404).send('User not found')
   }
-  
+
   const textIndex = storage_data[credential].texts.findIndex(t => t.id === parseInt(id))
   if (textIndex === -1) {
     return res.status(404).send('Text not found')
   }
   
   storage_data[credential].texts.splice(textIndex, 1)
-  await saveData(storage_data)
+  await saveUserData(credential, storage_data[credential])
   res.json({ success: true })
 })
 
@@ -136,7 +171,7 @@ app.post('/api/upload/:credential', upload.single('file'), async (req, res) => {
     const originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
     
     if (!storage_data[credential]) {
-      storage_data[credential] = { texts: [], files: [] }
+      storage_data[credential] = await loadUserData(credential)
     }
     
     // 获取文件大小
@@ -149,8 +184,8 @@ app.post('/api/upload/:credential', upload.single('file'), async (req, res) => {
       timestamp: new Date().toISOString(),
       size: stats.size || 0  // 确保有默认值
     })
-    
-    await saveData(storage_data)
+
+    await saveUserData(credential, storage_data[credential])
     res.json({ success: true })
   } catch (error) {
     console.error('Upload error:', error)
@@ -175,7 +210,7 @@ app.delete('/api/file/:credential/:id', async (req, res) => {
     await fsPromises.unlink(file.systemPath)
     // 从数据中移除
     storage_data[credential].files = storage_data[credential].files.filter(f => f.id !== parseInt(id))
-    await saveData(storage_data)
+    await saveUserData(credential, storage_data[credential])
     res.json({ success: true })
   } catch (error) {
     console.error('Delete error:', error)
@@ -217,6 +252,12 @@ app.get('/api/download/:credential/:fileId', async (req, res) => {
     res.status(500).send('Error downloading file')
   }
 })
+
+// 初始化服务器
+async function initServer() {
+  await ensureDirectories()
+  storage_data = await loadAllData()
+}
 
 // 启动服务器
 initServer().then(() => {

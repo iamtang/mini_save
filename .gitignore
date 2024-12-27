@@ -1,5 +1,6 @@
 **/node_modules
 **/uploads
+**/data
 .DS_Store
 # env files
 .env.local
