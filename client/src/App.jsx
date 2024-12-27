@@ -14,7 +14,6 @@ function App() {
   const [copyStatus, setCopyStatus] = useState('')
   const [uploadProgress, setUploadProgress] = useState(null)
   const contentRef = useRef(null)
-  const lastSeenTimeRef = useRef(0)
 
   useEffect(() => {
     if (credential) {
@@ -45,25 +44,7 @@ function App() {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/content/${credential}`)
       const data = await response.json()
-      
-      // 检查是否有新记录
-      const newLatestTime = Math.max(
-        ...[...data.texts, ...data.files].map(item => new Date(item.timestamp).getTime()),
-        0
-      )
-
       setContents(data)
-      
-      // 只有当有新内容且比上次看到的更新时才滚动
-      if (newLatestTime > lastSeenTimeRef.current) {
-        if (contentRef.current) {
-          contentRef.current.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-          })
-        }
-        lastSeenTimeRef.current = newLatestTime
-      }
     } catch (error) {
       console.error('Fetch error:', error)
     }
@@ -268,14 +249,6 @@ function App() {
   const handleDownload = (id) => {
     window.location.href = `${import.meta.env.VITE_API_URL}/api/download/${credential}/${id}`
   }
-
-  // 定时刷新内容
-  useEffect(() => {
-    if (isAuth) {
-      const timer = setInterval(fetchContents, 5000)
-      return () => clearInterval(timer)
-    }
-  }, [isAuth])
 
   if (isLoading) {
     return null
