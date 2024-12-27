@@ -1,19 +1,29 @@
-import { KeyIcon, LogoutIcon } from './Icons'
+import { LogoutIcon } from './Icons'
+import { RefreshIcon } from './Icons'
 
-const Header = ({ credential, onLogout }) => {
+const Header = ({ credential, onLogout, onRefresh }) => {
   return (
-    <div className="header">
+    <header className="header">
       <div className="header-content">
         <div className="app-title">迷你仓</div>
-        {/* <div className="credential-name">
-          <KeyIcon />
-          <span>凭证: {credential}</span>
-        </div> */}
-        <button className="logout-button" onClick={onLogout} title="退出登录">
-          <LogoutIcon />
-        </button>
+        <div className="header-actions">
+          <button 
+            className="refresh-button" 
+            onClick={onRefresh}
+            title="刷新内容"
+          >
+            <RefreshIcon />
+          </button>
+          <button 
+            className="logout-button" 
+            onClick={onLogout}
+            title="退出登录"
+          >
+            <LogoutIcon />
+          </button>
+        </div>
       </div>
-    </div>
+    </header>
   )
 }
 

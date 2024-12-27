@@ -4,6 +4,7 @@ import Login from './components/Login'
 import Header from './components/Header'
 import ContentSection from './components/ContentSection'
 import InputSection from './components/InputSection'
+import { RefreshIcon } from './components/Icons'
 
 function App() {
   const [credential, setCredential] = useState(localStorage.getItem('credential') || '')
@@ -338,6 +339,10 @@ function App() {
     window.location.href = `${import.meta.env.VITE_API_URL}/api/download/${credential}/${id}`
   }
 
+  const handleRefresh = () => {
+    fetchContents()
+  }
+
   // 添加视口高度计算
   useEffect(() => {
     const setVH = () => {
@@ -386,6 +391,14 @@ function App() {
         formatFileSize={formatFileSize}
         contentRef={contentRef}
       />
+
+      <button 
+        className="refresh-button" 
+        onClick={handleRefresh}
+        title="刷新内容"
+      >
+        <RefreshIcon />
+      </button>
 
       {copyStatus && <div className="copy-status">{copyStatus}</div>}
 

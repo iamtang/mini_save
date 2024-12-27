@@ -271,7 +271,7 @@ textarea {
   overflow-y: hidden;
 }
 
-/* 隐藏滚动条但保持���滚动 */
+/* 隐藏滚动条但保持运动 */
 textarea::-webkit-scrollbar {
   display: none;
 }
@@ -468,4 +468,53 @@ textarea:focus {
 
 .upload-button.disabled svg {
   color: #666;
+}
+
+/* 移除刷新按钮原来的样式 */
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* 添加悬浮刷新按钮的样式 */
+.refresh-button {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(80px + env(safe-area-inset-bottom));  /* 确保在输入框上方 */
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: all 0.2s ease;
+  z-index: 100;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.refresh-button:hover {
+  transform: rotate(180deg);
+  background-color: var(--primary-dark);
+}
+
+.refresh-button:active {
+  transform: rotate(180deg) scale(0.9);
+}
+
+/* 移动端样式 */
+@media (max-width: 768px) {
+  .refresh-button {
+    right: 1rem;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  .refresh-button:active {
+    background-color: var(--primary-dark);
+    transform: rotate(180deg) scale(0.9);
+  }
 }
