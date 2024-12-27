@@ -5,14 +5,27 @@ const Login = ({ setCredential, onLogin }) => {
   const inputRefs = useRef([])
 
   useEffect(() => {
-    // 自动聚焦第一个输入框
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus()
+    // 从本地存储读取上次使用的凭证
+    const savedCredential = localStorage.getItem('lastCredential')
+    if (savedCredential && savedCredential.length === 6) {
+      // 将凭证拆分为字符数组
+      setCode(savedCredential.split(''))
+      // 自动提交
+      setCredential(savedCredential)
+      onLogin()
+    } else {
+      // 如果没有保存的凭证，聚焦第一个输入框
+      if (inputRefs.current[0]) {
+        inputRefs.current[0].focus()
+      }
     }
-  }, [])
+  }, [setCredential, onLogin])
 
   const handleInput = (index, value) => {
-    // 移除数字限制检查
+    // 过滤掉空格
+    value = value.replace(/\s/g, '')
+    if (!value) return  // 如果过滤后为空，直接返回
+
     const newCode = [...code]
     newCode[index] = value
 
@@ -26,6 +39,8 @@ const Login = ({ setCredential, onLogin }) => {
     // 如果所有字符都填完了，自动提交
     if (newCode.every(char => char) && value) {
       const credential = newCode.join('')
+      // 保存到本地存储
+      localStorage.setItem('lastCredential', credential)
       setCredential(credential)
       onLogin()
     }
@@ -41,24 +56,26 @@ const Login = ({ setCredential, onLogin }) => {
   const handlePaste = (e) => {
     e.preventDefault()
     const pastedData = e.clipboardData.getData('text')
-    const numbers = pastedData.replace(/\D/g, '').split('').slice(0, 6)
+    // 过滤掉空格后再处理
+    const chars = pastedData.replace(/\s/g, '').split('').slice(0, 6)
     
-    if (numbers.length) {
+    if (chars.length) {
       const newCode = [...code]
-      numbers.forEach((num, index) => {
-        if (index < 6) newCode[index] = num
+      chars.forEach((char, index) => {
+        if (index < 6) newCode[index] = char
       })
       setCode(newCode)
 
-      // 聚焦到最后一个填充的数字后面的输入框
-      const nextEmptyIndex = Math.min(numbers.length, 5)
+      // 聚焦到最后一个填充的字符后面的输入框
+      const nextEmptyIndex = Math.min(chars.length, 5)
       if (inputRefs.current[nextEmptyIndex]) {
         inputRefs.current[nextEmptyIndex].focus()
       }
 
-      // 如果粘贴的数字正好是6位，自动提交
-      if (newCode.every(digit => digit)) {
+      // 如果粘贴的字符正好是6位，自动提交
+      if (newCode.every(char => char)) {
         const credential = newCode.join('')
+        localStorage.setItem('lastCredential', credential)
         setCredential(credential)
         onLogin()
       }

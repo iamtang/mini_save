@@ -7,7 +7,7 @@ import InputSection from './components/InputSection'
 import { RefreshIcon } from './components/Icons'
 
 function App() {
-  const [credential, setCredential] = useState(localStorage.getItem('credential') || '')
+  const [credential, setCredential] = useState(localStorage.getItem('lastCredential') || '')
   const [isAuth, setIsAuth] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [text, setText] = useState('')
@@ -23,20 +23,34 @@ function App() {
     } else {
       setIsLoading(false)
     }
-  }, [])
+  }, [credential])
 
   const checkAuth = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/auth`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ credential })
       })
-      localStorage.setItem('credential', credential)
-      setIsAuth(true)
-      fetchContents()
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        localStorage.setItem('credential', credential)
+        setIsAuth(true)
+        // 登录成功后立即获取内容
+        await fetchContents()  // 使用 await 确保内容加载完成
+      } else {
+        throw new Error('Auth failed')
+      }
     } catch (error) {
       console.error('Auth error:', error)
+      setIsAuth(false)
     } finally {
       setIsLoading(false)
     }
@@ -44,7 +58,13 @@ function App() {
 
   const fetchContents = async () => {
     try {
+      if (!credential) return
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/content/${credential}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const data = await response.json()
       
       // 保留当前正在上传的文件
@@ -126,7 +146,7 @@ function App() {
         return newTasks
       })
 
-      // 添加进度跟踪变量
+      // 添加进度追踪变量
       let lastUpdate = Date.now()
       let lastLoaded = 0
 
@@ -330,6 +350,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('credential')
+    localStorage.removeItem('lastCredential')
     setCredential('')
     setIsAuth(false)
     setContents({ texts: [], files: [] })
