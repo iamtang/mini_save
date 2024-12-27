@@ -416,7 +416,7 @@ textarea:focus {
   z-index: 2;
 }
 
-/* ��动端样式 */
+/* 移动端样式 */
 @media (max-width: 768px) {
   .content-section {
     padding: 0.5rem;
@@ -575,9 +575,8 @@ textarea:focus {
 }
 
 /* Toast 样式 */
-.credential-toast {
-  position: absolute;
-  top: 100%;
+.toast {
+  position: fixed;
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.8);
@@ -588,6 +587,14 @@ textarea:focus {
   z-index: 1000;
   animation: fadeIn 0.2s ease;
   white-space: nowrap;
+}
+
+.toast-top {
+  top: 4rem;
+}
+
+.toast-bottom {
+  bottom: 5rem;
 }
 
 @keyframes fadeIn {

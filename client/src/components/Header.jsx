@@ -1,27 +1,16 @@
-import { useState, useRef } from 'react'
+import { useRef } from 'react'
 import { LogoutIcon } from './Icons'
+import { useToast } from '../utils/helpers'
+import Toast from './common/Toast'
 
 const Header = ({ credential, onLogout }) => {
-  const [showToast, setShowToast] = useState(false)
-  const timeoutRef = useRef(null)
+  const [showToast, , showCredential] = useToast()
   const lastTapRef = useRef(0)
 
-  // 显示 Toast
-  const showCredential = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-    setShowToast(true)
-    timeoutRef.current = setTimeout(() => {
-      setShowToast(false)
-    }, 2000)
-  }
-
-  // 处理移动端双击
   const handleTouchStart = () => {
     const now = Date.now()
-    if (now - lastTapRef.current < 300) { // 300ms 内的双击
-      showCredential()
+    if (now - lastTapRef.current < 300) {
+      showCredential(`当前凭证：${credential}`)
     }
     lastTapRef.current = now
   }
@@ -31,7 +20,7 @@ const Header = ({ credential, onLogout }) => {
       <div className="header-content">
         <h1 
           className="app-title" 
-          onDoubleClick={showCredential}
+          onDoubleClick={() => showCredential(`当前凭证：${credential}`)}
           onTouchStart={handleTouchStart}
         >
           迷你仓
@@ -44,11 +33,7 @@ const Header = ({ credential, onLogout }) => {
           <LogoutIcon />
         </button>
       </div>
-      {showToast && (
-        <div className="credential-toast">
-          当前凭证：{credential}
-        </div>
-      )}
+      <Toast show={showToast} message={`当前凭证：${credential}`} position="top" />
     </header>
   )
 }

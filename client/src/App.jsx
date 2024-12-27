@@ -5,6 +5,8 @@ import Header from './components/Header'
 import ContentSection from './components/ContentSection'
 import InputSection from './components/InputSection'
 import { RefreshIcon } from './components/Icons'
+import { formatFileSize, escapeHtml, useToast, copyToClipboard } from './utils/helpers'
+import Toast from './components/common/Toast'
 
 function App() {
   const [credential, setCredential] = useState(localStorage.getItem('lastCredential') || '')
@@ -16,6 +18,7 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState(null)
   const contentRef = useRef(null)
   const [uploadTasks, setUploadTasks] = useState(new Set())
+  const [showCopyToast, message, showCopyMessage] = useToast(1500)
 
   useEffect(() => {
     if (credential) {
@@ -259,7 +262,7 @@ function App() {
         method: 'DELETE'
       })
       
-      // 只更新 texts 数组，保持 files 数组不变
+      // 只更新 texts ��组，保持 files 数组不变
       setContents(prev => ({
         ...prev,
         texts: prev.texts.filter(t => t.id !== id)
@@ -287,57 +290,12 @@ function App() {
 
   const handleCopyText = async (text) => {
     try {
-      // 尝试使用新的 Clipboard API
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text)
-      } else {
-        // 回退方案：创建临时文本区域
-        const textArea = document.createElement('textarea')
-        textArea.value = text
-        textArea.style.position = 'fixed'
-        textArea.style.left = '-999999px'
-        textArea.style.top = '-999999px'
-        document.body.appendChild(textArea)
-        textArea.focus()
-        textArea.select()
-        
-        try {
-          document.execCommand('copy')
-          textArea.remove()
-        } catch (err) {
-          console.error('复制失败:', err)
-          textArea.remove()
-          return
-        }
-      }
-      setCopyStatus('已复制')
-      setTimeout(() => setCopyStatus(''), 2000)
-    } catch (err) {
-      console.error('复制失败:', err)
-      // 在复制失败时也显示提示，让用户知道发生了什么
-      setCopyStatus('复制失败')
-      setTimeout(() => setCopyStatus(''), 2000)
+      const success = await copyToClipboard(text)
+      showCopyMessage(success ? '已复制到剪贴板' : '复制失败')
+    } catch (error) {
+      console.error('Copy failed:', error)
+      showCopyMessage('复制失败')
     }
-  }
-
-  // 转义HTML标签防止XSS
-  const escapeHtml = (unsafe) => {
-    return unsafe
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  // 格式化文件大小
-  const formatFileSize = (bytes) => {
-    if (!bytes && bytes !== 0) return '未知大小'
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
   }
 
   // 添加自动调整高度的函数
@@ -421,7 +379,7 @@ function App() {
         <RefreshIcon />
       </button>
 
-      {copyStatus && <div className="copy-status">{copyStatus}</div>}
+      <Toast show={showCopyToast} message={message} />
 
       <InputSection 
         text={text}
