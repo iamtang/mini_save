@@ -1,14 +1,32 @@
 import { SendIcon, UploadIcon } from './Icons'
 
-const InputSection = ({ text, setText, onSubmit, onFileUpload, adjustTextareaHeight }) => {
+const InputSection = ({ 
+  text, 
+  setText, 
+  onSubmit, 
+  onFileUpload, 
+  adjustTextareaHeight,
+  uploadTasks
+}) => {
+  const maxConcurrentUploads = 3
+  const isUploading = uploadTasks.size > 0
+
   return (
     <div className="input-section">
       <div className="input-container">
-        <label className="upload-button" title="上传文件">
+        <label 
+          className={`upload-button ${isUploading ? 'disabled' : ''}`} 
+          title={isUploading 
+            ? `正在上传${uploadTasks.size}个文件...` 
+            : '上传文件'}
+        >
           <input
             type="file"
+            multiple
+            accept="*/*"
             onChange={onFileUpload}
             style={{ display: 'none' }}
+            disabled={isUploading}
           />
           <UploadIcon />
         </label>

@@ -9,6 +9,7 @@
   --text-secondary: #757575;
   --border-color: #e0e0e0;
   --shadow-color: rgba(0, 0, 0, 0.1);
+  --vh: 1vh;
 }
 
 body {
@@ -28,10 +29,12 @@ html {
 }
 
 .app-container {
-  height: 100vh;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
   position: fixed;
+  width: 100%;
   top: 0;
   left: 0;
   right: 0;
@@ -85,7 +88,7 @@ html {
 /* 内容区域样式 */
 .content-section {
   flex: 1;
-  overflow-y: scroll;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 1rem;
   display: flex;
@@ -119,6 +122,7 @@ html {
   max-width: 600px;
   box-sizing: border-box;
   min-height: fit-content;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .content-item-text,
@@ -231,11 +235,12 @@ small {
 
 /* 输入区域样式 */
 .input-section {
-  background-color: var(--surface-color);
-  box-shadow: 0 -2px 4px var(--shadow-color);
+  position: sticky;
+  bottom: 0;
+  background: var(--surface-color);
+  border-top: 1px solid var(--border-color);
   padding: 1rem;
-  z-index: 100;
-  flex-shrink: 0;
+  z-index: 10;
 }
 
 .input-container {
@@ -266,7 +271,7 @@ textarea {
   overflow-y: hidden;
 }
 
-/* 隐藏滚动条但保持可滚动 */
+/* 隐藏滚动条但保持���滚动 */
 textarea::-webkit-scrollbar {
   display: none;
 }
@@ -295,6 +300,29 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease, background-color 0.2s;
+}
+
+.upload-button:active,
+.send-button:active {
+  background-color: var(--primary-dark);
+  border-radius: 8px;
+  transform: scale(0.95);
+}
+
+/* 修改禁用状态的样式 */
+.upload-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #ccc !important;
+  pointer-events: none;
+  transform: none;
+}
+
+.upload-button.disabled:active {
+  transform: none;
+  background-color: #ccc !important;
 }
 
 /* 复制状态提示 */
@@ -385,6 +413,13 @@ textarea:focus {
     width: calc(100% - 1rem);
   }
   
+  .content-item:active {
+    background-color: var(--background-color);
+    border-radius: 12px;
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+  
   .delete-button {
     opacity: 1;
     margin-top: 0;
@@ -401,6 +436,13 @@ textarea:focus {
   textarea {
     padding: 10px;
   }
+
+  .upload-button:active,
+  .send-button:active {
+    background-color: var(--primary-dark);
+    border-radius: 8px;
+    transform: scale(0.95);
+  }
 }
 
 .loading-more {
@@ -410,4 +452,20 @@ textarea:focus {
   font-size: 0.875rem;
   width: 100%;
   box-sizing: border-box;
+}
+
+.upload-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #ccc !important;
+  pointer-events: none;
+}
+
+.upload-button.disabled:hover {
+  background-color: #ccc !important;
+  transform: none;
+}
+
+.upload-button.disabled svg {
+  color: #666;
 }

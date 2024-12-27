@@ -14,6 +14,7 @@ function App() {
   const [copyStatus, setCopyStatus] = useState('')
   const [uploadProgress, setUploadProgress] = useState(null)
   const contentRef = useRef(null)
+  const [uploadTasks, setUploadTasks] = useState(new Set())
 
   useEffect(() => {
     if (credential) {
@@ -44,7 +45,14 @@ function App() {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/content/${credential}`)
       const data = await response.json()
-      setContents(data)
+      
+      // 保留当前正在上传的文件
+      const uploadingFiles = contents.files.filter(f => f.uploading)
+      
+      setContents(prev => ({
+        texts: data.texts,
+        files: [...uploadingFiles, ...data.files]
+      }))
     } catch (error) {
       console.error('Fetch error:', error)
     }
@@ -79,20 +87,46 @@ function App() {
   }
 
   const handleFileUpload = async (event) => {
-    const file = event.target.files[0]
-    if (!file) return
+    const files = event.target.files
+    if (!files.length) return
 
+    // 检查是否超过最大同时上传数
+    const maxConcurrentUploads = 3
+    const remainingSlots = maxConcurrentUploads - uploadTasks.size
+    const filesToUpload = Array.from(files).slice(0, remainingSlots)
+
+    if (files.length > remainingSlots) {
+      alert(`当前只能再上传 ${remainingSlots} 个文件`)
+    }
+
+    // 处理每个选中的文件
+    filesToUpload.forEach(file => {
+      uploadFile(file)
+    })
+
+    // 清空文件输入框
+    event.target.value = ''
+  }
+
+  const uploadFile = async (file) => {
     const formData = new FormData()
     formData.append('file', file)
 
     try {
       const xhr = new XMLHttpRequest()
       
-      // 创建一个临时的文件记录
-      const tempFileId = Date.now()
-      // 添加上传开始时间和上次更新时间
-      const startTime = Date.now()
-      let lastUpdate = startTime
+      // 创建一个临时的文件记录，使用更可靠的唯一ID
+      const tempFileId = Date.now() + '-' + Math.random().toString(36).substr(2, 9)
+      
+      // 添加到上传任务列表
+      setUploadTasks(prev => {
+        const newTasks = new Set(prev)
+        newTasks.add(tempFileId)
+        return newTasks
+      })
+
+      // 添加进度跟踪变量
+      let lastUpdate = Date.now()
       let lastLoaded = 0
 
       setContents(prev => ({
@@ -103,8 +137,8 @@ function App() {
           timestamp: new Date().toISOString(),
           uploading: true,
           progress: 0,
-          speed: '0 KB/s',  // 添加速率字段
-          size: file.size   // 添加文件大小
+          speed: '0 KB/s',
+          size: file.size
         }, ...prev.files]
       }))
 
@@ -121,15 +155,12 @@ function App() {
           const currentTime = Date.now()
           const timeElapsed = currentTime - lastUpdate
           
-          // 每200ms更新一次速率
           if (timeElapsed >= 200) {
             const loaded = event.loaded - lastLoaded
-            const speed = (loaded / timeElapsed) * 1000 // 转换为每秒的字节数
-            
-            // 格式化速率
+            const speed = (loaded / timeElapsed) * 1000
             const formattedSpeed = formatSpeed(speed)
-            
             const progress = Math.round((event.loaded / event.total) * 100)
+            
             setContents(prev => ({
               ...prev,
               files: prev.files.map(f => 
@@ -139,7 +170,6 @@ function App() {
               )
             }))
             
-            // 更新上次的数据
             lastUpdate = currentTime
             lastLoaded = event.loaded
           }
@@ -151,30 +181,40 @@ function App() {
           fetchContents()
         } else {
           console.error('Upload failed')
-          // 移除临时文件记录
           setContents(prev => ({
             ...prev,
             files: prev.files.filter(f => f.id !== tempFileId)
           }))
         }
+        setUploadTasks(prev => {
+          const newTasks = new Set(prev)
+          newTasks.delete(tempFileId)
+          return newTasks
+        })
       }
 
       xhr.onerror = () => {
         console.error('Upload error')
-        // 移除临时文件记录
         setContents(prev => ({
           ...prev,
           files: prev.files.filter(f => f.id !== tempFileId)
         }))
+        setUploadTasks(prev => {
+          const newTasks = new Set(prev)
+          newTasks.delete(tempFileId)
+          return newTasks
+        })
       }
 
       xhr.open('POST', `${import.meta.env.VITE_API_URL}/api/upload/${credential}`)
       xhr.send(formData)
-      
-      // 清空文件输入框
-      event.target.value = ''
     } catch (error) {
       console.error('Upload error:', error)
+      setUploadTasks(prev => {
+        const newTasks = new Set(prev)
+        newTasks.delete(tempFileId)
+        return newTasks
+      })
     }
   }
 
@@ -197,7 +237,12 @@ function App() {
       await fetch(`${import.meta.env.VITE_API_URL}/api/text/${credential}/${id}`, {
         method: 'DELETE'
       })
-      fetchContents()
+      
+      // 只更新 texts 数组，保持 files 数组不变
+      setContents(prev => ({
+        ...prev,
+        texts: prev.texts.filter(t => t.id !== id)
+      }))
     } catch (error) {
       console.error('Delete error:', error)
     }
@@ -208,7 +253,12 @@ function App() {
       await fetch(`${import.meta.env.VITE_API_URL}/api/file/${credential}/${id}`, {
         method: 'DELETE'
       })
-      fetchContents()
+      
+      // 只删除非上传中且 ID 匹配的文件
+      setContents(prev => ({
+        ...prev,
+        files: prev.files.filter(f => f.uploading || f.id !== id)
+      }))
     } catch (error) {
       console.error('Delete error:', error)
     }
@@ -288,6 +338,23 @@ function App() {
     window.location.href = `${import.meta.env.VITE_API_URL}/api/download/${credential}/${id}`
   }
 
+  // 添加视口高度计算
+  useEffect(() => {
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01
+      document.documentElement.style.setProperty('--vh', `${vh}px`)
+    }
+
+    setVH()
+    window.addEventListener('resize', setVH)
+    window.addEventListener('orientationchange', setVH)
+
+    return () => {
+      window.removeEventListener('resize', setVH)
+      window.removeEventListener('orientationchange', setVH)
+    }
+  }, [])
+
   if (isLoading) {
     return null
   }
@@ -328,6 +395,7 @@ function App() {
         onSubmit={handleSubmitText}
         onFileUpload={handleFileUpload}
         adjustTextareaHeight={adjustTextareaHeight}
+        uploadTasks={uploadTasks}
       />
     </div>
   )
