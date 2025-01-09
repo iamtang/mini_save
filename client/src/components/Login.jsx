@@ -1,45 +1,34 @@
 import { useState, useRef, useEffect } from 'react'
 
 const Login = ({ setCredential, onLogin }) => {
-  const [code, setCode] = useState(['', '', '', '', '', ''])
+  const [code, setCode] = useState(Array(6).fill(''))
   const inputRefs = useRef([])
 
   useEffect(() => {
-    // 从本地存储读取上次使用的凭证
     const savedCredential = localStorage.getItem('lastCredential')
     if (savedCredential && savedCredential.length === 6) {
-      // 将凭证拆分为字符数组
       setCode(savedCredential.split(''))
-      // 自动提交
       setCredential(savedCredential)
       onLogin()
-    } else {
-      // 如果没有保存的凭证，聚焦第一个输入框
-      if (inputRefs.current[0]) {
-        inputRefs.current[0].focus()
-      }
+    } else if (inputRefs.current[0]) {
+      inputRefs.current[0].focus()
     }
   }, [setCredential, onLogin])
 
   const handleInput = (index, value) => {
-    // 过滤掉空格
     value = value.replace(/\s/g, '')
-    // if (!value) return  // 如果过滤后为空，直接返回
+    if (!value) return
 
     const newCode = [...code]
     newCode[index] = value
-
     setCode(newCode)
 
-    // 如果输入了字符，移动到下一个输入框
     if (value && index < 5) {
       inputRefs.current[index + 1].focus()
     }
 
-    // 如果所有字符都填完了，自动提交
-    if (newCode.every(char => char) && value) {
+    if (newCode.every(char => char)) {
       const credential = newCode.join('')
-      // 保存到本地存储
       localStorage.setItem('lastCredential', credential)
       setCredential(credential)
       onLogin()
