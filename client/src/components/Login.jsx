@@ -17,7 +17,6 @@ const Login = ({ setCredential, onLogin }) => {
 
   const handleInput = (index, value) => {
     value = value.replace(/\s/g, '')
-    if (!value) return
 
     const newCode = [...code]
     newCode[index] = value
