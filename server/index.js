@@ -1,37 +1,27 @@
-import express from 'express'
-import multer from 'multer'
-import cors from 'cors'
-import * as fs from 'fs'
-import { promises as fsPromises } from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+const express = require('express')
+const multer = require('multer')
+const fs = require('fs')
+const path = require('path')
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.join(__dirname, 'data')
 const UPLOADS_DIR = path.join(__dirname, 'uploads')
+
+const app = express();
+
+// app.use(cors())
+app.use(express.json())
+app.use(express.static(path.join(__dirname, '../dist/')));
 
 // 存储数据的对象
 let storage_data = {}
 
-// 确保必要目录存在
-async function ensureDirectories() {
-  const dirs = [UPLOADS_DIR, DATA_DIR]
-  for (const dir of dirs) {
-    try {
-      await fsPromises.access(dir)
-    } catch {
-      await fsPromises.mkdir(dir, { recursive: true })
-    }
-  }
-}
-
 // 确保用户目录存在
-async function ensureUserDirectory(credential) {
+function ensureUserDirectory(credential) {
   const userDir = path.join(UPLOADS_DIR, credential)
   try {
-    await fsPromises.access(userDir)
+    fs.accessSync(userDir)
   } catch {
-    await fsPromises.mkdir(userDir, { recursive: true })
+    fs.mkdirSync(userDir, { recursive: true })
   }
   return userDir
 }
@@ -42,10 +32,10 @@ function getUserDataPath(credential) {
 }
 
 // 加载用户数据
-async function loadUserData(credential) {
+function loadUserData(credential) {
   try {
     const dataPath = getUserDataPath(credential)
-    const data = await fsPromises.readFile(dataPath, 'utf8')
+    const data = fs.readFileSync(dataPath, 'utf8')
     return JSON.parse(data)
   } catch {
     return { texts: [], files: [] }
@@ -53,20 +43,20 @@ async function loadUserData(credential) {
 }
 
 // 保存用户数据
-async function saveUserData(credential, data) {
+function saveUserData(credential, data) {
   const dataPath = getUserDataPath(credential)
-  await fsPromises.writeFile(dataPath, JSON.stringify(data, null, 2), 'utf8')
+ fs.writeFileSync(dataPath, JSON.stringify(data, null, 2), 'utf8')
 }
 
 // 加载所有用户数据
 async function loadAllData() {
   try {
-    const files = await fsPromises.readdir(DATA_DIR)
+    const files = fs.readdirSync(DATA_DIR)
     const data = {}
     for (const file of files) {
       if (file.endsWith('.json')) {
         const credential = path.basename(file, '.json')
-        data[credential] = await loadUserData(credential)
+        data[credential] = loadUserData(credential)
       }
     }
     return data
@@ -75,15 +65,13 @@ async function loadAllData() {
   }
 }
 
-const app = express()
-app.use(cors())
-app.use(express.json())
+
 
 // 配置 multer 来保留原始文件名
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     try {
-      const userDir = await ensureUserDirectory(req.params.credential)
+      const userDir = ensureUserDirectory(req.params.credential)
       cb(null, userDir)
     } catch (error) {
       cb(error)
@@ -103,19 +91,24 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
+
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '../dist/index.html');
+});
+
 // API 路由
 app.post('/api/auth', async (req, res) => {
   const { credential } = req.body
   if (!storage_data[credential]) {
-    storage_data[credential] = await loadUserData(credential)
-    await ensureUserDirectory(credential)
+    storage_data[credential] = loadUserData(credential)
+    ensureUserDirectory(credential)
   }
   res.json({ success: true })
 })
 
 app.get('/api/content/:credential', async (req, res) => {
   const { credential } = req.params
-  const userData = await loadUserData(credential)
+  const userData = loadUserData(credential)
   
   const sortedData = {
     texts: [...userData.texts].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
@@ -129,14 +122,14 @@ app.post('/api/text/:credential', async (req, res) => {
   const { credential } = req.params
   const { text } = req.body
 
-  const userData = await loadUserData(credential)
+  const userData = loadUserData(credential)
   userData.texts.unshift({
     id: Date.now(),
     content: text,
     timestamp: new Date().toISOString()
   })
 
-  await saveUserData(credential, userData)
+  saveUserData(credential, userData)
   storage_data[credential] = userData
   res.json({ success: true })
 })
@@ -154,7 +147,7 @@ app.delete('/api/text/:credential/:id', async (req, res) => {
   }
   
   storage_data[credential].texts.splice(textIndex, 1)
-  await saveUserData(credential, storage_data[credential])
+  saveUserData(credential, storage_data[credential])
   res.json({ success: true })
 })
 
@@ -171,11 +164,11 @@ app.post('/api/upload/:credential', upload.single('file'), async (req, res) => {
     const originalname = Buffer.from(file.originalname, 'latin1').toString('utf8')
     
     if (!storage_data[credential]) {
-      storage_data[credential] = await loadUserData(credential)
+      storage_data[credential] = loadUserData(credential)
     }
     
     // 获取文件大小
-    const stats = await fsPromises.stat(file.path)
+    const stats = fs.statSync(file.path)
     
     storage_data[credential].files.unshift({
       id: Date.now(),
@@ -185,7 +178,7 @@ app.post('/api/upload/:credential', upload.single('file'), async (req, res) => {
       size: stats.size || 0  // 确保有默认值
     })
 
-    await saveUserData(credential, storage_data[credential])
+    saveUserData(credential, storage_data[credential])
     res.json({ success: true })
   } catch (error) {
     console.error('Upload error:', error)
@@ -207,10 +200,10 @@ app.delete('/api/file/:credential/:id', async (req, res) => {
   
   try {
     // 删除物理文件
-    await fsPromises.unlink(file.systemPath)
+   fs.unlinkSync(file.systemPath)
     // 从数据中移除
     storage_data[credential].files = storage_data[credential].files.filter(f => f.id !== parseInt(id))
-    await saveUserData(credential, storage_data[credential])
+    saveUserData(credential, storage_data[credential])
     res.json({ success: true })
   } catch (error) {
     console.error('Delete error:', error)
@@ -234,7 +227,7 @@ app.get('/api/download/:credential/:fileId', async (req, res) => {
 
     // 检查文件是否存在
     try {
-      await fsPromises.access(file.systemPath)
+     fs.accessSync(file.systemPath)
     } catch {
       return res.status(404).send('File not found on disk')
     }
@@ -253,15 +246,8 @@ app.get('/api/download/:credential/:fileId', async (req, res) => {
   }
 })
 
-// 初始化服务器
-async function initServer() {
-  await ensureDirectories()
-  storage_data = await loadAllData()
+module.exports = (PORT) => {
+  return app.listen(PORT, () => {
+    console.log(`Server is running at ${PORT}`);
+  });
 }
-
-// 启动服务器
-initServer().then(() => {
-  app.listen(3000, '0.0.0.0', () => {
-    console.log('Server running on port 3000')
-  })
-})
