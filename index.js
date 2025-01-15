@@ -6,14 +6,19 @@ const Server =  require('./server/index.js');
 let tray = null;
 let server = null
 const PORT = 3000;
+let ip = null
 // 获取本机 IP 地址
 function getIPAddress() {
   const interfaces = os.networkInterfaces();
   for (let dev in interfaces) {
     for (let details of interfaces[dev]) {
       if (details.family === 'IPv4' && !details.internal) {
-        return details.address;
+        if(details.address.includes('192.168')){
+            return details.address;
+        }
+        ip = details.address
       }
+      
     }
   }
 }
@@ -40,7 +45,7 @@ app.on('ready', () => {
   // 创建托盘菜单
   tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
   const contextMenu = Menu.buildFromTemplate([
-    { label: '打开网站', click: () => shell.openExternal(`http://${getIPAddress()}:${PORT}/`) },
+    { label: '打开网站', click: () => shell.openExternal(`http://${getIPAddress() || ip}:${PORT}/`) },
     { label: '退出', click: () => app.quit() },
   ]);
 
