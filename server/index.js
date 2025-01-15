@@ -1,6 +1,7 @@
 const express = require('express')
 const multer = require('multer')
 const fs = require('fs')
+// const cors = require('cors')
 const path = require('path')
 
 const DATA_DIR = path.join(__dirname, 'data')
@@ -28,6 +29,11 @@ function ensureUserDirectory(credential) {
 
 // 获取用户数据文件路径
 function getUserDataPath(credential) {
+  try {
+    fs.accessSync(DATA_DIR)
+  } catch {
+    fs.mkdirSync(DATA_DIR, { recursive: true })
+  }
   return path.join(DATA_DIR, `${credential}.json`)
 }
 
