@@ -28,6 +28,7 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
+    "productName": "远程U盘",
     "asar": true,
     "asarUnpack": [
       "client/**/*"
