@@ -10,6 +10,8 @@ module.exports = {
       {
         name: '@electron-forge/maker-dmg',
         config: (arch) => ({
+          title: '远程U盘', // DMG 文件的标题
+          icon: './logo.icns', // 必须是 .icns 文件
           // it can also be a function taking the currently built arch
           // as a parameter and returning a config object, e.g.
         })
