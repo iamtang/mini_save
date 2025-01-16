@@ -1,19 +1,21 @@
+// const path = require('path')
 module.exports = {
     makers: [
-      {
-        name: '@electron-forge/maker-zip',
-        platforms: ['darwin', 'linux'],
-        config: {
-          // the config can be an object
-        }
-      },
+      // {
+      //   name: '@electron-forge/maker-squirrel',
+      //   platforms: ['win32'],
+      //   config: (arch) => ({
+      //     name: '远程U盘setup',
+      //     setupIcon: path.join(__dirname, 'logo.ico'),
+      //     authors: 'JJ',
+      //     description: '远程U盘',
+      //   })
+      // },
       {
         name: '@electron-forge/maker-dmg',
         config: (arch) => ({
           title: '远程U盘', // DMG 文件的标题
           icon: './logo.icns', // 必须是 .icns 文件
-          // it can also be a function taking the currently built arch
-          // as a parameter and returning a config object, e.g.
         })
       }
     ],
@@ -22,7 +24,7 @@ module.exports = {
         extraResource: ['./icon.png'],
         icon: './logo',
         ignore: [
-            /\/client/
+          /^\/?client($|\/)/
         ],
     },
 };
