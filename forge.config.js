@@ -20,7 +20,7 @@ module.exports = {
         extraResource: ['./icon.png'],
         icon: './logo',
         ignore: [
-            "./client"
-        ]
+            /\/client/
+        ],
     },
 };
