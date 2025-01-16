@@ -1,6 +1,6 @@
 {
   "name": "mini_save",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "远程U盘",
   "main": "index.js",
   "scripts": {
@@ -19,7 +19,6 @@
   "dependencies": {
     "cors": "^2.8.5",
     "electron-log": "^5.2.4",
-    "electron-updater": "^6.3.9",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1"
   },
@@ -29,8 +28,6 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.apple.mini_save",
-    "productName": "MiniSave",
     "asar": true,
     "asarUnpack": [
       "client/**/*"
@@ -38,8 +35,7 @@
     "mac": {
       "icon": "icons/logo.icns",
       "target": [
-        "dmg",
-        "zip"
+        "dmg"
       ]
     },
     "directories": {
