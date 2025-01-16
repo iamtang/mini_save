@@ -43,8 +43,8 @@ app.on('ready', () => {
   startServer(PORT);
 
   // 创建托盘菜单
-  tray = new Tray('icon.png'); // 替换为你的图标路径
-  // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
+  // tray = new Tray('icon.png'); // 替换为你的图标路径
+  tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
   const contextMenu = Menu.buildFromTemplate([
     { label: '打开网站', click: () => shell.openExternal(`http://${getIPAddress() || ip}:${PORT}/`) },
     { label: '管理储存', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
