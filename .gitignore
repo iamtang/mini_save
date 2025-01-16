@@ -9,4 +9,6 @@
 data.json
 package-lock.json
 dist
+h5-dist
 out
+build-output

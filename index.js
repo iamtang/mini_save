@@ -1,12 +1,20 @@
 const { app, Tray, Menu, shell } =  require('electron');
+const { autoUpdater } = require('electron-updater');
 const os =  require('os');
 const path =  require('path');
 const Server =  require('./server/index.js');
+const pkg = require('./package.json')
+const log = require('electron-log/main');
+log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
+log.initialize()
 // 创建托盘应用
-let tray = null;
+
 let server = null
 const PORT = 3000;
 let ip = null
+
 // 获取本机 IP 地址
 function getIPAddress() {
   const interfaces = os.networkInterfaces();
@@ -32,7 +40,7 @@ function startServer() {
 function stopServer() {
   if (server) {
     server.close(() => {
-      console.log('Server closed.');
+      log.info('Server closed.');
     });
   }
 }
@@ -43,18 +51,46 @@ app.on('ready', () => {
   startServer(PORT);
 
   // 创建托盘菜单
-  // tray = new Tray('icon.png'); // 替换为你的图标路径
-  tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
+  const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
+  // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
   const contextMenu = Menu.buildFromTemplate([
     { label: '打开网站', click: () => shell.openExternal(`http://${getIPAddress() || ip}:${PORT}/`) },
     { label: '管理储存', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
+    { label: '检查更新', click: () => {log.info('点击更新');autoUpdater.checkForUpdatesAndNotify()} },
+    { label: `版本:${pkg.version}`, enabled: false},
     { label: '退出', click: () => app.quit() },
   ]);
 
   tray.setToolTip('Electron App Running in Background');
   tray.setContextMenu(contextMenu);
 
-  console.log('Electron App is running in the background...');
+  log.info('Electron App is running in the background...');
+});
+
+// 监听更新事件
+autoUpdater.on('update-available', (info) => {
+  log.info('发现新版本:', info);
+});
+
+autoUpdater.on('update-not-available', () => {
+  log.info('当前已是最新版本');
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('更新出错:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  log.info(`下载进度: ${progressObj.percent}%`);
+});
+
+autoUpdater.on('update-downloaded', () => {
+  log.info('下载完成，准备安装新版本');
+  autoUpdater.quitAndInstall();
+});
+
+app.on('checking-for-update', () => {
+  log.info('当开始检查更新的时候触发');
 });
 
 // 退出时关闭服务器

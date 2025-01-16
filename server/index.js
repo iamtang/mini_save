@@ -1,7 +1,7 @@
 const express = require('express')
 const multer = require('multer')
 const fs = require('fs')
-// const cors = require('cors')
+// const cors = require('corZs')
 const path = require('path')
 
 module.exports = (_app, PORT) => {

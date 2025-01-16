@@ -1,31 +1,49 @@
 {
-  "name": "远程U盘",
-  "version": "1.0.0",
-  "description": "",
+  "name": "mini_save",
+  "version": "1.0.1",
+  "description": "远程U盘",
   "main": "index.js",
   "scripts": {
-    "s": "electron .",
+    "dev": "electron .",
     "build": "npm run build --workspace client",
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make"
+    "start": "electron-builder --dir",
+    "publish": "electron-builder --publish always",
+    "package": "electron-builder --mac"
   },
   "workspaces": [
     "client",
     "server"
   ],
-  "author": "",
+  "author": "iamtang",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
+    "electron-log": "^5.2.4",
+    "electron-updater": "^6.3.9",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.6.0",
-    "@electron-forge/maker-dmg": "^7.6.0",
-    "@electron-forge/maker-zip": "^7.6.0",
-    "electron": "^34.0.0"
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.apple.mini_save",
+    "productName": "MiniSave",
+    "asar": true,
+    "asarUnpack": [
+      "client/**/*"
+    ],
+    "mac": {
+      "icon": "icons/logo.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "directories": {
+      "output": "build-output"
+    }
   }
- 
 }
