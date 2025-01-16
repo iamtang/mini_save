@@ -18,6 +18,9 @@ module.exports = {
     packagerConfig: {
         // asar: false // or an object containing your asar options
         extraResource: ['./icon.png'],
-        icon: './logo'
+        icon: './logo',
+        ignore: [
+            "./client"
+        ]
     },
 };
