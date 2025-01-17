@@ -23,7 +23,6 @@
     "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.6.0",
     "electron": "^34.0.0",
     "electron-builder": "^25.1.8"
   },
