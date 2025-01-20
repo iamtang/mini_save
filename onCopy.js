@@ -4,10 +4,11 @@ const FormData = require('form-data');
 const fs = require('fs');
 const WebSocket = require('ws');
 let preContent = null;
+let socket = null
 
 function onCopy(server, {url, credential, isServer}){
     if(!credential) return null
-    const socket = isServer ? initServerWss(server) : initClientWss(url)
+    socket = isServer ? initServerWss(server) : initClientWss(url)
     let currentContent = clipboard.read('public.file-url') || clipboard.readText();
     setInterval(async () => {
       currentContent = clipboard.read('public.file-url') || clipboard.readText();
@@ -62,14 +63,39 @@ function initServerWss(server){
     }}
 }
 
+function reConnentClientWss(url){客户端连接成功
+    setTimeout(() => {
+        console.log('正在重连')
+        socket = initClientWss(url);
+    }, 5000)
+}
+
 function initClientWss(url){
     const socket = new WebSocket(`ws://${url}`);
     socket.on('open', () => {
-      console.log('WebSocket 连接成功');
-      setInterval(() => {
-        socket.send(JSON.stringify({type: 'ping'}));
-      }, 10000);
+        console.log('WebSocket 连接成功');
+        socket.on('message', (msg) => {
+            const data = JSON.parse(msg);
+            if(data.type === 'text'){
+                preContent = data.data
+                clipboard.writeText(data.data)
+            }
+            
+            console.log(`收到消息: ${msg}`);
+        });
+        setInterval(() => {
+        console.warn('WebSocket 连接关闭');
+            socket.send(JSON.stringify({type: 'ping'}));
+        }, 30000);
     });
+
+    socket.onerror = (error) => {
+        socket.close(); // 确保触发 onclose 事件
+    };
+  
+    socket.onclose = () => {
+        reConnentClientWss(url); // 调用重连逻辑
+    };
 
     return socket
 }
