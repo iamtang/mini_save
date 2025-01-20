@@ -1,7 +1,9 @@
 const { app, Tray, Menu, shell } =  require('electron');
 const os =  require('os');
 const path =  require('path');
+const onCopy =require('./onCopy.js')
 const Server =  require('./server/index.js');
+const wss =  require('./server/wss.js');
 const pkg = require('./package.json')
 const log = require('electron-log/main');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
@@ -31,6 +33,7 @@ function getIPAddress() {
 // 启动服务器
 function startServer() {
   server = Server(app, PORT)
+  wss(server)
 }
 
 // 停止服务器
@@ -42,16 +45,19 @@ function stopServer() {
   }
 }
 
+
+
 // Electron 启动
-app.on('ready', () => {
+app.whenReady().then(() => {
+  const url = `http://${getIPAddress() || ip}:${PORT}/`;
   // 启动服务器
   startServer(PORT);
-
+  onCopy(url)
   // 创建托盘菜单
   const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
   // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
   const contextMenu = Menu.buildFromTemplate([
-    { label: '打开网站', click: () => shell.openExternal(`http://${getIPAddress() || ip}:${PORT}/`) },
+    { label: '打开网站', click: () => shell.openExternal(url) },
     { label: '管理储存', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
     { label: `版本:${pkg.version}`, enabled: false},
     { label: '退出', click: () => app.quit() },
@@ -62,8 +68,12 @@ app.on('ready', () => {
   log.info('Electron App is running in the background...');
 });
 
+app.on('window-all-closed', (event) => {
+  // 不退出应用，仅退出窗口
+  event.preventDefault();
+});
 
 // 退出时关闭服务器
-app.on('quit', () => {
+app.on('quit', (e) => {
   stopServer();
 });

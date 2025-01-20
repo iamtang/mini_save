@@ -253,6 +253,7 @@ module.exports = (_app, PORT) => {
       res.status(500).send('Error downloading file')
     }
   })
+  
   return app.listen(PORT, () => {
     console.log(`Server is running at ${PORT}`);
   });

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>输入框</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+    }
+    #inputField {
+      width: 200px;
+      height: 30px;
+      padding: 0 5px;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <input type="text" id="inputField" placeholder="例如：http://192.168.1.1:3000">
+  <script>
+    const { ipcRenderer } = require('electron');
+    // 监听键盘事件
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        // 回车确认
+        const inputValue = document.getElementById('inputField').value;
+        ipcRenderer.send('submit-input', inputValue); // 发送输入内容
+      } else if (event.key === 'Escape') {
+        // Esc 取消
+        ipcRenderer.send('cancel-input'); // 通知主进程取消
+      }
+    });
+  </script>
+</body> 
+</html>
