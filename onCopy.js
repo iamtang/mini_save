@@ -3,16 +3,15 @@ const axios =  require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 const WebSocket = require('ws');
+let preContent = null;
 
 function onCopy(server, {url, credential, isServer}){
     if(!credential) return null
-    isServer ? initServerWss(server) : initClientWss(url)
-    let preContent = null;
+    const socket = isServer ? initServerWss(server) : initClientWss(url)
     let currentContent = clipboard.read('public.file-url') || clipboard.readText();
     setInterval(async () => {
       currentContent = clipboard.read('public.file-url') || clipboard.readText();
       if(currentContent === preContent) return null;
-      
       if(clipboard.read('public.file-url')){
         const form = new FormData();
         form.append('file', fs.createReadStream(currentContent.replace('file://','')));
@@ -20,9 +19,11 @@ function onCopy(server, {url, credential, isServer}){
         preContent = currentContent
       }else{
         let currentContent = clipboard.readText();
-        await axios.post(`http://${url}api/text/${credential}`, {text: currentContent})
+        const id = await axios.post(`http://${url}api/text/${credential}`, {text: currentContent})
+        console.log(id)
         preContent = currentContent
       }
+      
     }, 1000);
 }
 
@@ -49,16 +50,19 @@ function initServerWss(server){
         wss.emit('connection', ws, request);
       });
     });
+    return w
 }
 
 function initClientWss(url){
     const socket = new WebSocket(`ws://${url}`);
-
     socket.on('open', () => {
       console.log('WebSocket 连接成功');
-      // 发送消息到 WebSocket 服务器
-      socket.send('message', 'hello world');
+      setInterval(() => {
+        socket.send('message', {type: 'ping'});
+      }, 10000);
     });
+
+    return socket
 }
 
 

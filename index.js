@@ -51,7 +51,7 @@ app.whenReady().then(() => {
   const url = isServer ? `${getIPAddress() || ip}:${PORT}/` : '10.4.98.204:3000/';
   // 启动服务器
   isServer && startServer(PORT);
-  onCopy(server, {url: `ws://${url}`, isServer, credential: '123123'})
+  onCopy(server, {url, isServer, credential: '123123'})
   // 创建托盘菜单
   const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
   // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
