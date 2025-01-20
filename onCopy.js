@@ -6,13 +6,14 @@ const path = require('path');
 const WebSocket = require('ws');
 const { downloadFile } = require('./utils.js')
 let preContent = null;
+let currentContent = null;
 let socket = null
 
 
 function onCopy(server, {url, credential, isServer}){
     if(!credential) return null
     socket = isServer ? initServerWss(server, {url, credential}) : initClientWss({url, credential})
-    let currentContent = clipboard.read('public.file-url') || clipboard.readText();
+    currentContent = clipboard.read('public.file-url') || clipboard.readText();
     setInterval(async () => {
         currentContent = clipboard.read('public.file-url') || clipboard.readText();
         if(currentContent === preContent) return null;
@@ -42,12 +43,12 @@ function initServerWss(server, { url, credential }) {
 			const data = JSON.parse(msg);
 			data.type !== 'ping' && console.log(data, '=======')
 			if (data.type === 'text') {
-				preContent = data.data
-				clipboard.writeText(data.data)
+				currentContent = preContent = data.data
+				clipboard.writeText(currentContent)
 			} else if (data.type === 'file') {
 				downloadFile(`http://${url}/api/download/${credential}/${data.data}`).then(res => {
-					preContent = res
-					clipboard.writeBuffer('public.file-url', Buffer.from(`file://${res}`, 'utf-8'));
+					currentContent = preContent = `file://${res}`
+					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
 				})
 			}
 		});
@@ -84,12 +85,12 @@ function initClientWss({ url, credential }) {
 		socket.on('message', (msg) => {
 			const data = JSON.parse(msg);
 			if (data.type === 'text') {
-				preContent = data.data
-				clipboard.writeText(data.data)
+				currentContent = preContent = data.data
+				clipboard.writeText(currentContent)
 			} else if (data.type === 'file') {
 				downloadFile(`http://${url}/api/download/${credential}/${data.data}`).then(res => {
-					preContent = res
-					clipboard.writeBuffer('public.file-url', Buffer.from(`file://${res}`, 'utf-8'));
+					currentContent = preContent = res
+					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
 				})
 			}
 			console.log(`收到消息: ${msg}`);
