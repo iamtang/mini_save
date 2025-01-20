@@ -14,13 +14,14 @@ function onCopy(server, {url, credential, isServer}){
       if(currentContent === preContent) return null;
       if(clipboard.read('public.file-url')){
         const form = new FormData();
-        form.append('file', fs.createReadStream(currentContent.replace('file://','')));
-        await axios.post(`http://${url}api/upload/${credential}`, form, {headers: form.getHeaders() })
+        form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
+        const res = await axios.post(`http://${url}api/upload/${credential}`, form, {headers: form.getHeaders() })
+        socket.send(JSON.stringify({type: 'file', data: res.data.id}))
         preContent = currentContent
       }else{
         let currentContent = clipboard.readText();
-        const id = await axios.post(`http://${url}api/text/${credential}`, {text: currentContent})
-        console.log(id)
+        const res = await axios.post(`http://${url}api/text/${credential}`, {text: currentContent})
+        socket.send(JSON.stringify({type: 'text', data: currentContent}))
         preContent = currentContent
       }
       
@@ -58,7 +59,7 @@ function initClientWss(url){
     socket.on('open', () => {
       console.log('WebSocket 连接成功');
       setInterval(() => {
-        socket.send('message', {type: 'ping'});
+        socket.send(JSON.stringify({type: 'ping'}));
       }, 10000);
     });
 
