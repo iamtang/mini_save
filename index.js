@@ -1,34 +1,19 @@
 const { app, Tray, Menu, shell } =  require('electron');
-const os =  require('os');
+const log = require('electron-log/main');
 const path =  require('path');
 const onCopy =require('./onCopy.js')
 const Server =  require('./server/index.js');
 const pkg = require('./package.json')
-const log = require('electron-log/main');
+const { getIPAddress } = require('./utils.js')
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
 // 创建托盘应用
 
-let isServer = false
+let isServer = true
 let server = null
 const PORT = 3000;
-let ip = null
+let ip = getIPAddress()
 
-// 获取本机 IP 地址
-function getIPAddress() {
-  const interfaces = os.networkInterfaces();
-  for (let dev in interfaces) {
-    for (let details of interfaces[dev]) {
-      if (details.family === 'IPv4' && !details.internal) {
-        if(details.address.includes('192.168')){
-            return details.address;
-        }
-        ip = details.address
-      }
-      
-    }
-  }
-}
 
 // 启动服务器
 function startServer() {
@@ -44,11 +29,9 @@ function stopServer() {
   }
 }
 
-
-
 // Electron 启动
 app.whenReady().then(() => {
-  const url = isServer ? `${getIPAddress() || ip}:${PORT}/` : '10.4.98.204:3000/';
+  const url = isServer ? `${ip}:${PORT}` : '10.4.98.204:3000';
   // 启动服务器
   isServer && startServer(PORT);
   onCopy(server, {url, isServer, credential: '123123'})
