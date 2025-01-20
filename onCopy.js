@@ -89,7 +89,7 @@ function initClientWss({ url, credential }) {
 				clipboard.writeText(currentContent)
 			} else if (data.type === 'file') {
 				downloadFile(`http://${url}/api/download/${credential}/${data.data}`).then(res => {
-					currentContent = preContent = res
+					currentContent = preContent = `file://${res}`
 					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
 				})
 			}
