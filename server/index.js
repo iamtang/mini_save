@@ -131,16 +131,16 @@ module.exports = (_app, PORT) => {
     const { text } = req.body
 
     const userData = loadUserData(credential)
-    const res = {
+    const data = {
       id: Date.now(),
       content: text,
       timestamp: new Date().toISOString()
     };
-    userData.texts.unshift(res)
+    userData.texts.unshift(data)
 
     saveUserData(credential, userData)
     storage_data[credential] = userData
-    res.json({ success: true, ...res })
+    res.json({ success: true, ...data })
   })
 
   app.delete('/api/text/:credential/:id', async (req, res) => {
@@ -178,17 +178,17 @@ module.exports = (_app, PORT) => {
       
       // 获取文件大小
       const stats = fs.statSync(file.path)
-      const res = {
+      const data = {
         id: Date.now(),
         filename: originalname,
         systemPath: file.path,
         timestamp: new Date().toISOString(),
         size: stats.size || 0  // 确保有默认值
       }
-      storage_data[credential].files.unshift(res)
+      storage_data[credential].files.unshift(data)
 
       saveUserData(credential, storage_data[credential])
-      res.json({ success: true, ...res })
+      res.json({ success: true, ...data })
     } catch (error) {
       console.error('Upload error:', error)
       res.status(500).send('Error processing file')
