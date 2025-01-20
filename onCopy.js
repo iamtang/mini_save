@@ -17,11 +17,13 @@ function onCopy(server, {url, credential, isServer}){
         form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
         const res = await axios.post(`http://${url}api/upload/${credential}`, form, {headers: form.getHeaders() })
         socket.send(JSON.stringify({type: 'file', data: res.data.id}))
+        console.log('发送==1')
         preContent = currentContent
       }else{
         let currentContent = clipboard.readText();
-        const res = await axios.post(`http://${url}api/text/${credential}`, {text: currentContent})
+        await axios.post(`http://${url}api/text/${credential}`, {text: currentContent})
         socket.send(JSON.stringify({type: 'text', data: currentContent}))
+        console.log('发送==2')
         preContent = currentContent
       }
       
@@ -33,16 +35,15 @@ function initServerWss(server){
     // 处理 WebSocket 连接
     wss.on('connection', (ws) => {
       console.log('客户端连接成功');
-      
       // 监听客户端发送的消息
-      ws.on('message', (message) => {
-        console.log(`收到消息: ${message}`);
-        // 回复客户端消息
-        ws.send(`服务器收到: ${message}`);
+      ws.on('message', (msg) => {
+        const data = JSON.parse(msg);
+        console.log(data, '=======')
+        if(data.type === 'text'){
+          preContent = data.data
+          clipboard.writeText(data.data)
+        }
       });
-    
-      // 发送消息给客户端
-      ws.send('欢迎连接到 WebSocket 服务器');
     });
     
     // 在 HTTP 服务器上升级到 WebSocket
@@ -51,7 +52,14 @@ function initServerWss(server){
         wss.emit('connection', ws, request);
       });
     });
-    return w
+    return {
+      send(data){
+        wss.clients.forEach((client) => {
+          if(client.readyState === WebSocket.OPEN){
+            client.send(data)
+          }
+        })
+    }}
 }
 
 function initClientWss(url){
