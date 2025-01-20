@@ -131,15 +131,16 @@ module.exports = (_app, PORT) => {
     const { text } = req.body
 
     const userData = loadUserData(credential)
-    userData.texts.unshift({
+    const res = {
       id: Date.now(),
       content: text,
       timestamp: new Date().toISOString()
-    })
+    };
+    userData.texts.unshift(res)
 
     saveUserData(credential, userData)
     storage_data[credential] = userData
-    res.json({ success: true })
+    res.json({ success: true, ...res })
   })
 
   app.delete('/api/text/:credential/:id', async (req, res) => {
@@ -177,17 +178,17 @@ module.exports = (_app, PORT) => {
       
       // 获取文件大小
       const stats = fs.statSync(file.path)
-      
-      storage_data[credential].files.unshift({
+      const res = {
         id: Date.now(),
         filename: originalname,
         systemPath: file.path,
         timestamp: new Date().toISOString(),
         size: stats.size || 0  // 确保有默认值
-      })
+      }
+      storage_data[credential].files.unshift(res)
 
       saveUserData(credential, storage_data[credential])
-      res.json({ success: true })
+      res.json({ success: true, ...res })
     } catch (error) {
       console.error('Upload error:', error)
       res.status(500).send('Error processing file')
@@ -253,7 +254,7 @@ module.exports = (_app, PORT) => {
       res.status(500).send('Error downloading file')
     }
   })
-  
+
   return app.listen(PORT, () => {
     console.log(`Server is running at ${PORT}`);
   });
