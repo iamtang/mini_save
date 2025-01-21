@@ -13,7 +13,6 @@ log.initialize()
 let server = null
 let ip = getIPAddress()
 
-
 // 启动服务器
 function startServer(config) {
   server = Server(app, config)
@@ -52,15 +51,14 @@ app.whenReady().then(() => {
   const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
   // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
   const contextMenu = Menu.buildFromTemplate([
-    { label: '打开网站', click: () => shell.openExternal(`http://${config.url}`) },
-    { label: '管理储存', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
+    { label: '打开网址', click: () => shell.openExternal(`http://${config.url}`) },
+    { label: '管理', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
     { label: `设置`, click: createSettingWindow },
     { label: '退出', click: () => app.quit() },
   ]);
 
   tray.setToolTip('Electron App Running in Background');
   tray.setContextMenu(contextMenu);
-  log.info('Electron App is running in the background...');
 });
 
 app.on('window-all-closed', (event) => {

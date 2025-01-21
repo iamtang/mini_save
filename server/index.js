@@ -1,8 +1,10 @@
 const express = require('express')
 const multer = require('multer')
 const fs = require('fs')
-// const cors = require('corZs')
 const path = require('path')
+const log = require('electron-log/main');
+log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
+log.initialize()
 
 module.exports = (_app, { PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 }) => {
   const userDataPath = _app.getPath('userData');
@@ -200,7 +202,7 @@ module.exports = (_app, { PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 }) =>
             try {
                 fs.unlinkSync(file.systemPath); // 删除文件系统中的文件
             } catch (err) {
-                console.error(`Failed to delete file ${file.systemPath}:`, err);
+              log.error(`Failed to delete file ${file.systemPath}:`, err);
             }
         });
 
@@ -211,7 +213,7 @@ module.exports = (_app, { PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 }) =>
       saveUserData(credential, storage_data[credential])
       res.json({ success: true, ...data })
     } catch (error) {
-      console.error('Upload error:', error)
+      log.error('Upload error:', error)
       res.status(500).send('Error processing file')
     }
   })
@@ -236,7 +238,7 @@ module.exports = (_app, { PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 }) =>
       saveUserData(credential, storage_data[credential])
       res.json({ success: true })
     } catch (error) {
-      console.error('Delete error:', error)
+      log.error('Delete error:', error)
       res.status(500).send('Error deleting file')
     }
   })
@@ -271,12 +273,12 @@ module.exports = (_app, { PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 }) =>
       const fileStream = fs.createReadStream(file.systemPath)
       fileStream.pipe(res)
     } catch (error) {
-      console.error('Download error:', error)
+      log.error('Download error:', error)
       res.status(500).send('Error downloading file')
     }
   })
 
   return app.listen(PORT, () => {
-    console.log(`Server is running at ${PORT}`);
+    log.info(`Server is running at ${PORT}`);
   });
 }

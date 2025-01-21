@@ -12,7 +12,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            background-color: #f0f0f0;
+            background-color: rgb(229, 229, 229);
         }
 
         .tabs {
@@ -39,33 +39,33 @@
 
         .content {
             flex: 1;
-            padding: 20px;
-            background-color: white;
-            border: 1px solid #d0d0d0;
-            border-top: none;
+            padding: 20px 20px 0 20px;
         }
 
         .form-group {
             margin-bottom: 15px;
             font-size: 14px;
+            display: flex;
+            align-items: center;
         }
 
         .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
+          display: block;
+          font-weight: 500;
+          color: #333;
+          width: 220px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 6px;
+            padding: 4px 8px;
             font-size: 14px;
             border: 1px solid #ccc;
             border-radius: 3px;
             box-sizing: border-box;
             color: #333;
             background-color: #f9f9f9;
+            margin: 0 0 0 20px;
         }
 
         .form-group input:focus {
@@ -83,36 +83,27 @@
         .buttons {
             display: flex;
             justify-content: flex-end;
-            padding: 10px 20px;
-            background-color: #f8f8f8;
-            border-top: 1px solid #d0d0d0;
+            padding: 0 20px;
         }
 
         button {
-            padding: 8px 16px;
-            font-size: 14px;
-            background-color: #0078d4;
-            color: white;
+            padding: 2px 16px;
+            font-size: 12px;
+            background-color: #fff;
+            color: #000;
             border: none;
             border-radius: 3px;
             cursor: pointer;
         }
 
-        button:hover {
-            background-color: #005ea6;
-        }
-
-        button:active {
-            background-color: #004e8c;
-        }
     </style>
 </head>
 <body>
     <div class="content" id="content">
         <div id="general" class="tab-content">
             <div class="form-group">
-                <label for="SERVER_ADDRESS">服务地址</label>
-                <input type="text" id="SERVER_ADDRESS" placeholder="请输入服务地址，不填写为服务端：192.168.1.1">
+                <label for="SERVER_ADDRESS">服务端地址</label>
+                <input type="text" id="SERVER_ADDRESS" placeholder="服务端为空">
             </div>
             <div class="form-group">
                 <label for="PORT">端口</label>

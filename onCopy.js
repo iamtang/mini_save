@@ -5,6 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
 const { downloadFile } = require('./utils.js')
+const log = require('electron-log/main');
+
+log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
+log.initialize()
 let preContent = null;
 let currentContent = null;
 let socket = null
@@ -21,7 +25,7 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
             const filePath = decodeURIComponent(currentContent.replace('file://',''));
             const stats = fs.statSync(filePath);
             if(stats.size > 1024 * 1024 * MAX_FILE_SIZE){
-                return console.log('文件过大')
+                return null
             }
 			const form = new FormData();
 			form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
@@ -32,7 +36,7 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
 			let currentContent = clipboard.readText();
 			await axios.post(`http://${url}/api/text/${CREDENTIAL}`, {text: currentContent})
 			socket.send(JSON.stringify({type: 'text', data: currentContent}))
-			// console.log('===文本===')
+			// log.info('===文本===')
 		}
 		preContent = currentContent
     }, 1000);
@@ -40,7 +44,7 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
 
 function onMessage(msg, { url, CREDENTIAL }){
     const data = JSON.parse(msg);
-    // data.type !== 'ping' && console.log(data, '=======')
+    // data.type !== 'ping' && log.info(data, '=======')
     if (data.type === 'text') {
         currentContent = preContent = data.data
         clipboard.writeText(currentContent)
@@ -56,7 +60,7 @@ function initServerWss(server, { url, CREDENTIAL }) {
 	const wss = new WebSocket.Server({ noServer: true });
 	// 处理 WebSocket 连接
 	wss.on('connection', (ws) => {
-		console.log('客户端连接成功');
+		log.info('客户端连接成功');
 		// 监听客户端发送的消息
 		ws.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
 	});
@@ -80,7 +84,7 @@ function initServerWss(server, { url, CREDENTIAL }) {
 
 function reConnentClientWss({ url, CREDENTIAL }) {
 	setTimeout(() => {
-		console.log('正在重连')
+		log.info('正在重连')
 		socket = initClientWss({ url, CREDENTIAL });
 	}, 5000)
 }
@@ -88,7 +92,7 @@ function reConnentClientWss({ url, CREDENTIAL }) {
 function initClientWss({ url, CREDENTIAL }) {
 	const socket = new WebSocket(`ws://${url}`);
 	socket.on('open', () => {
-		console.log('WebSocket 连接成功');
+		log.info('WebSocket 连接成功');
 		socket.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
 		setInterval(() => {
 			socket.send(JSON.stringify({ type: 'ping' }));

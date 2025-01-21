@@ -8,9 +8,10 @@ function createSettingWindow() {
   if (settingWindow) return;
   
   settingWindow = new BrowserWindow({
-    width: 600,
-    height: 550,
+    width: 360,
+    height: 340,
     resizable: false,
+    devTools: false, // 禁用开发者工具
     // transparent: true,
     alwaysOnTop: true, // 使窗口总在最前
     // modal: true,
