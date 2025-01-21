@@ -10,9 +10,9 @@ let currentContent = null;
 let socket = null
 
 
-function onCopy(server, {isServer, SERVER_ADDRESS, CREDENTIAL, MAX_FILE_SIZE}){
+function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE}){
     if(!CREDENTIAL) return null
-    socket = isServer ? initServerWss(server, {SERVER_ADDRESS, CREDENTIAL}) : initClientWss({SERVER_ADDRESS, CREDENTIAL})
+    socket = isServer ? initServerWss(server, {url, CREDENTIAL}) : initClientWss({url, CREDENTIAL})
     currentContent = clipboard.read('public.file-url') || clipboard.readText();
     setInterval(async () => {
         currentContent = clipboard.read('public.file-url') || clipboard.readText();
@@ -25,12 +25,12 @@ function onCopy(server, {isServer, SERVER_ADDRESS, CREDENTIAL, MAX_FILE_SIZE}){
             }
 			const form = new FormData();
 			form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
-			const res = await axios.post(`http://${SERVER_ADDRESS}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
+			const res = await axios.post(`http://${url}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
 			socket.send(JSON.stringify({type: 'file', data: res.data.id}))
 			console.log('===文件===')
 		}else{
 			let currentContent = clipboard.readText();
-			await axios.post(`http://${SERVER_ADDRESS}/api/text/${CREDENTIAL}`, {text: currentContent})
+			await axios.post(`http://${url}/api/text/${CREDENTIAL}`, {text: currentContent})
 			socket.send(JSON.stringify({type: 'text', data: currentContent}))
 			console.log('===文本===')
 		}
@@ -38,7 +38,7 @@ function onCopy(server, {isServer, SERVER_ADDRESS, CREDENTIAL, MAX_FILE_SIZE}){
     }, 1000);
 }
 
-function initServerWss(server, { SERVER_ADDRESS, CREDENTIAL }) {
+function initServerWss(server, { url, CREDENTIAL }) {
 	const wss = new WebSocket.Server({ noServer: true });
 	// 处理 WebSocket 连接
 	wss.on('connection', (ws) => {
@@ -51,7 +51,7 @@ function initServerWss(server, { SERVER_ADDRESS, CREDENTIAL }) {
 				currentContent = preContent = data.data
 				clipboard.writeText(currentContent)
 			} else if (data.type === 'file') {
-				downloadFile(`http://${SERVER_ADDRESS}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
+				downloadFile(`http://${url}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
 					currentContent = preContent = `file://${res}`
 					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
 				})
@@ -76,15 +76,15 @@ function initServerWss(server, { SERVER_ADDRESS, CREDENTIAL }) {
 	}
 }
 
-function reConnentClientWss({ SERVER_ADDRESS, CREDENTIAL }) {
+function reConnentClientWss({ url, CREDENTIAL }) {
 	setTimeout(() => {
 		console.log('正在重连')
-		socket = initClientWss({ SERVER_ADDRESS, CREDENTIAL });
+		socket = initClientWss({ url, CREDENTIAL });
 	}, 5000)
 }
 
-function initClientWss({ SERVER_ADDRESS, CREDENTIAL }) {
-	const socket = new WebSocket(`ws://${SERVER_ADDRESS}`);
+function initClientWss({ url, CREDENTIAL }) {
+	const socket = new WebSocket(`ws://${url}`);
 	socket.on('open', () => {
 		console.log('WebSocket 连接成功');
 		socket.on('message', (msg) => {
@@ -93,7 +93,7 @@ function initClientWss({ SERVER_ADDRESS, CREDENTIAL }) {
 				currentContent = preContent = data.data
 				clipboard.writeText(currentContent)
 			} else if (data.type === 'file') {
-				downloadFile(`http://${SERVER_ADDRESS}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
+				downloadFile(`http://${url}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
 					currentContent = preContent = `file://${res}`
 					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
 				})
@@ -110,7 +110,7 @@ function initClientWss({ SERVER_ADDRESS, CREDENTIAL }) {
 	};
 
 	socket.onclose = () => {
-		reConnentClientWss({ SERVER_ADDRESS, CREDENTIAL }); // 调用重连逻辑
+		reConnentClientWss({ url, CREDENTIAL }); // 调用重连逻辑
 	};
 
 	return socket

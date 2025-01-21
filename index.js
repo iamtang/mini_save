@@ -13,7 +13,7 @@ log.initialize()
 let server = null
 let ip = getIPAddress()
 config.isServer = !config.SERVER_ADDRESS
-config.SERVER_ADDRESS = config.SERVER_ADDRESS || `${ip}:${config.PORT}`
+config.url = !config.isServer ? `${config.SERVER_ADDRESS}:${config.PORT}` : `${ip}:${config.PORT}`
 
 // 启动服务器
 function startServer(config) {
@@ -38,7 +38,7 @@ app.whenReady().then(() => {
   const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
   // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
   const contextMenu = Menu.buildFromTemplate([
-    { label: '打开网站', click: () => shell.openExternal(`http://${config.SERVER_ADDRESS}`) },
+    { label: '打开网站', click: () => shell.openExternal(`http://${config.url}`) },
     { label: '管理储存', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
     { label: `版本:${pkg.version}`, enabled: false},
     { label: '退出', click: () => app.quit() },
