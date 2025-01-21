@@ -8,7 +8,6 @@ const { getIPAddress } = require('./utils.js')
 const config = require('./config.json')
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
-// 创建托盘应用
 
 let server = null
 let ip = getIPAddress()

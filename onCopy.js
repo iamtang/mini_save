@@ -27,15 +27,29 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE}){
 			form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
 			const res = await axios.post(`http://${url}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
 			socket.send(JSON.stringify({type: 'file', data: res.data.id}))
-			console.log('===文件===')
+			// console.log('===文件===')
 		}else{
 			let currentContent = clipboard.readText();
 			await axios.post(`http://${url}/api/text/${CREDENTIAL}`, {text: currentContent})
 			socket.send(JSON.stringify({type: 'text', data: currentContent}))
-			console.log('===文本===')
+			// console.log('===文本===')
 		}
 		preContent = currentContent
     }, 1000);
+}
+
+function onMessage(msg){
+    const data = JSON.parse(msg);
+    // data.type !== 'ping' && console.log(data, '=======')
+    if (data.type === 'text') {
+        currentContent = preContent = data.data
+        clipboard.writeText(currentContent)
+    } else if (data.type === 'file') {
+        downloadFile(`http://${url}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
+            currentContent = preContent = `file://${res}`
+            clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
+        })
+    }
 }
 
 function initServerWss(server, { url, CREDENTIAL }) {
@@ -44,19 +58,7 @@ function initServerWss(server, { url, CREDENTIAL }) {
 	wss.on('connection', (ws) => {
 		console.log('客户端连接成功');
 		// 监听客户端发送的消息
-		ws.on('message', (msg) => {
-			const data = JSON.parse(msg);
-			data.type !== 'ping' && console.log(data, '=======')
-			if (data.type === 'text') {
-				currentContent = preContent = data.data
-				clipboard.writeText(currentContent)
-			} else if (data.type === 'file') {
-				downloadFile(`http://${url}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
-					currentContent = preContent = `file://${res}`
-					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
-				})
-			}
-		});
+		ws.on('message', onMessage);
 	});
 
 	// 在 HTTP 服务器上升级到 WebSocket
@@ -87,19 +89,7 @@ function initClientWss({ url, CREDENTIAL }) {
 	const socket = new WebSocket(`ws://${url}`);
 	socket.on('open', () => {
 		console.log('WebSocket 连接成功');
-		socket.on('message', (msg) => {
-			const data = JSON.parse(msg);
-			if (data.type === 'text') {
-				currentContent = preContent = data.data
-				clipboard.writeText(currentContent)
-			} else if (data.type === 'file') {
-				downloadFile(`http://${url}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
-					currentContent = preContent = `file://${res}`
-					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
-				})
-			}
-			console.log(`收到消息: ${msg}`);
-		});
+		socket.on('message', onMessage);
 		setInterval(() => {
 			socket.send(JSON.stringify({ type: 'ping' }));
 		}, 30000);
