@@ -2,7 +2,7 @@ const express = require('express')
 const multer = require('multer')
 const fs = require('fs')
 const path = require('path')
-const cors = require('cors')
+// const cors = require('cors')
 const log = require('electron-log/main');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
@@ -16,7 +16,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
   app.set('view engine', 'ejs');
   // 设置模板文件的目录
   app.set('views', path.join(__dirname, 'dist'));
-  app.use(cors())
+  // app.use(cors())
   app.use(express.json())
   app.use(express.static(path.join(__dirname, './dist/')));
 
