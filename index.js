@@ -6,15 +6,13 @@ const onCopy =require('./onCopy.js')
 const Server =  require('./server/index.js');
 const pkg = require('./package.json')
 const { getIPAddress } = require('./utils.js')
-const config = require(path.join(app.getPath('userData'), 'config.json'))
 const createSettingWindow = require('./page/setting/setting.js')
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
 
 let server = null
 let ip = getIPAddress()
-config.isServer = !config.SERVER_ADDRESS
-config.url = !config.isServer ? `${config.SERVER_ADDRESS}:${config.PORT}` : `${ip}:${config.PORT}`
+
 
 // 启动服务器
 function startServer(config) {
@@ -38,11 +36,15 @@ function initConfig(){
         // 如果没有，则从当前目录复制 config.json 到 userData 路径
         fs.copyFileSync(sourceConfigPath, targetConfigPath);
     }
+
+    return require(targetConfigPath)
 }
 
 // Electron 启动
 app.whenReady().then(() => {
-  initConfig()
+  const config = initConfig()
+  config.isServer = !config.SERVER_ADDRESS
+  config.url = !config.isServer ? `${config.SERVER_ADDRESS}:${config.PORT}` : `${ip}:${config.PORT}`
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
