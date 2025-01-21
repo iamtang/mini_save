@@ -30,7 +30,7 @@ function App() {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch(`${VITE_API_URL}/api/auth`, {
+      const response = await fetch(`${window.API_URL}/api/auth`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json'
@@ -63,7 +63,7 @@ function App() {
     try {
       if (!credential) return
 
-      const response = await fetch(`${VITE_API_URL}/api/content/${credential}`)
+      const response = await fetch(`${window.API_URL}/api/content/${credential}`)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -86,7 +86,7 @@ function App() {
     if (!text.trim()) return
     
     try {
-      await fetch(`${VITE_API_URL}/api/text/${credential}`, {
+      await fetch(`${window.API_URL}/api/text/${credential}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
@@ -230,7 +230,7 @@ function App() {
         })
       }
 
-      xhr.open('POST', `${VITE_API_URL}/api/upload/${credential}`)
+      xhr.open('POST', `${window.API_URL}/api/upload/${credential}`)
       xhr.send(formData)
     } catch (error) {
       console.error('Upload error:', error)
@@ -258,7 +258,7 @@ function App() {
 
   const handleDeleteText = async (id) => {
     try {
-      await fetch(`${VITE_API_URL}/api/text/${credential}/${id}`, {
+      await fetch(`${window.API_URL}/api/text/${credential}/${id}`, {
         method: 'DELETE'
       })
       
@@ -274,7 +274,7 @@ function App() {
 
   const handleDeleteFile = async (id) => {
     try {
-      await fetch(`${VITE_API_URL}/api/file/${credential}/${id}`, {
+      await fetch(`${window.API_URL}/api/file/${credential}/${id}`, {
         method: 'DELETE'
       })
       
@@ -315,7 +315,7 @@ function App() {
   }
 
   const handleDownload = (id) => {
-    window.location.href = `${VITE_API_URL}/api/download/${credential}/${id}`
+    window.location.href = `${window.API_URL}/api/download/${credential}/${id}`
   }
 
   const handleRefresh = () => {
