@@ -28,7 +28,7 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
 			const res = await axios.post(`http://${url}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
 			socket.send(JSON.stringify({type: 'file', data: res.data.id}))
 			// console.log('===文件===')
-		}else{
+		}else if(currentContent){
 			let currentContent = clipboard.readText();
 			await axios.post(`http://${url}/api/text/${CREDENTIAL}`, {text: currentContent})
 			socket.send(JSON.stringify({type: 'text', data: currentContent}))
