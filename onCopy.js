@@ -38,7 +38,7 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
     }, 1000);
 }
 
-function onMessage(msg){
+function onMessage(msg, { url, CREDENTIAL }){
     const data = JSON.parse(msg);
     // data.type !== 'ping' && console.log(data, '=======')
     if (data.type === 'text') {
@@ -58,7 +58,7 @@ function initServerWss(server, { url, CREDENTIAL }) {
 	wss.on('connection', (ws) => {
 		console.log('客户端连接成功');
 		// 监听客户端发送的消息
-		ws.on('message', onMessage);
+		ws.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
 	});
 
 	// 在 HTTP 服务器上升级到 WebSocket
@@ -89,7 +89,7 @@ function initClientWss({ url, CREDENTIAL }) {
 	const socket = new WebSocket(`ws://${url}`);
 	socket.on('open', () => {
 		console.log('WebSocket 连接成功');
-		socket.on('message', onMessage);
+		socket.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
 		setInterval(() => {
 			socket.send(JSON.stringify({ type: 'ping' }));
 		}, 30000);
