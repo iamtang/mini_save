@@ -4,7 +4,7 @@ const fs = require('fs')
 // const cors = require('corZs')
 const path = require('path')
 
-module.exports = (_app, PORT) => {
+module.exports = (_app, { PORT, MAX_TEXT_NUMBER, MAX_FILE_NUMBER }) => {
   const userDataPath = _app.getPath('userData');
   const DATA_DIR = path.join(userDataPath, 'data')
   const UPLOADS_DIR = path.join(userDataPath, 'uploads')
@@ -138,6 +138,11 @@ module.exports = (_app, PORT) => {
     };
     userData.texts.unshift(data)
 
+    // 保证 texts 数组长度不超过 20 条
+    if (userData.texts.length > MAX_TEXT_NUMBER) {
+      userData.texts = userData.texts.slice(0, MAX_TEXT_NUMBER); // 截取前 20 条记录
+    }
+
     saveUserData(credential, userData)
     storage_data[credential] = userData
     res.json({ success: true, ...data })
@@ -186,6 +191,22 @@ module.exports = (_app, PORT) => {
         size: stats.size || 0  // 确保有默认值
       }
       storage_data[credential].files.unshift(data)
+
+      // 检查并删除多余文件
+      if (storage_data[credential].files.length > MAX_FILE_NUMBER) {
+        // 删除多余的文件记录和文件系统中的实际文件
+        const extraFiles = storage_data[credential].files.slice(MAX_FILE_NUMBER);
+        extraFiles.forEach(file => {
+            try {
+                fs.unlinkSync(file.systemPath); // 删除文件系统中的文件
+            } catch (err) {
+                console.error(`Failed to delete file ${file.systemPath}:`, err);
+            }
+        });
+
+        // 保留最新的 MAX_FILE_NUMBER 条文件记录
+        storage_data[credential].files = storage_data[credential].files.slice(0, MAX_FILE_NUMBER);
+    }
 
       saveUserData(credential, storage_data[credential])
       res.json({ success: true, ...data })

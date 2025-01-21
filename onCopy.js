@@ -10,22 +10,27 @@ let currentContent = null;
 let socket = null
 
 
-function onCopy(server, {url, credential, isServer}){
-    if(!credential) return null
-    socket = isServer ? initServerWss(server, {url, credential}) : initClientWss({url, credential})
+function onCopy(server, {isServer, SERVER_ADDRESS, CREDENTIAL, MAX_FILE_SIZE}){
+    if(!CREDENTIAL) return null
+    socket = isServer ? initServerWss(server, {SERVER_ADDRESS, CREDENTIAL}) : initClientWss({SERVER_ADDRESS, CREDENTIAL})
     currentContent = clipboard.read('public.file-url') || clipboard.readText();
     setInterval(async () => {
         currentContent = clipboard.read('public.file-url') || clipboard.readText();
         if(currentContent === preContent) return null;
 		if(clipboard.read('public.file-url')){
+            const filePath = decodeURIComponent(currentContent.replace('file://',''));
+            const stats = fs.statSync(filePath);
+            if(stats.size > 1024 * 1024 * MAX_FILE_SIZE){
+                return console.log('文件过大')
+            }
 			const form = new FormData();
 			form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
-			const res = await axios.post(`http://${url}/api/upload/${credential}`, form, {headers: form.getHeaders() })
+			const res = await axios.post(`http://${SERVER_ADDRESS}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
 			socket.send(JSON.stringify({type: 'file', data: res.data.id}))
 			console.log('===文件===')
 		}else{
 			let currentContent = clipboard.readText();
-			await axios.post(`http://${url}/api/text/${credential}`, {text: currentContent})
+			await axios.post(`http://${SERVER_ADDRESS}/api/text/${CREDENTIAL}`, {text: currentContent})
 			socket.send(JSON.stringify({type: 'text', data: currentContent}))
 			console.log('===文本===')
 		}
@@ -33,7 +38,7 @@ function onCopy(server, {url, credential, isServer}){
     }, 1000);
 }
 
-function initServerWss(server, { url, credential }) {
+function initServerWss(server, { SERVER_ADDRESS, CREDENTIAL }) {
 	const wss = new WebSocket.Server({ noServer: true });
 	// 处理 WebSocket 连接
 	wss.on('connection', (ws) => {
@@ -46,7 +51,7 @@ function initServerWss(server, { url, credential }) {
 				currentContent = preContent = data.data
 				clipboard.writeText(currentContent)
 			} else if (data.type === 'file') {
-				downloadFile(`http://${url}/api/download/${credential}/${data.data}`).then(res => {
+				downloadFile(`http://${SERVER_ADDRESS}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
 					currentContent = preContent = `file://${res}`
 					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
 				})
@@ -71,15 +76,15 @@ function initServerWss(server, { url, credential }) {
 	}
 }
 
-function reConnentClientWss({ url, credential }) {
+function reConnentClientWss({ SERVER_ADDRESS, CREDENTIAL }) {
 	setTimeout(() => {
 		console.log('正在重连')
-		socket = initClientWss({ url, credential });
+		socket = initClientWss({ SERVER_ADDRESS, CREDENTIAL });
 	}, 5000)
 }
 
-function initClientWss({ url, credential }) {
-	const socket = new WebSocket(`ws://${url}`);
+function initClientWss({ SERVER_ADDRESS, CREDENTIAL }) {
+	const socket = new WebSocket(`ws://${SERVER_ADDRESS}`);
 	socket.on('open', () => {
 		console.log('WebSocket 连接成功');
 		socket.on('message', (msg) => {
@@ -88,7 +93,7 @@ function initClientWss({ url, credential }) {
 				currentContent = preContent = data.data
 				clipboard.writeText(currentContent)
 			} else if (data.type === 'file') {
-				downloadFile(`http://${url}/api/download/${credential}/${data.data}`).then(res => {
+				downloadFile(`http://${SERVER_ADDRESS}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
 					currentContent = preContent = `file://${res}`
 					clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
 				})
@@ -105,7 +110,7 @@ function initClientWss({ url, credential }) {
 	};
 
 	socket.onclose = () => {
-		reConnentClientWss({ url, credential }); // 调用重连逻辑
+		reConnentClientWss({ SERVER_ADDRESS, CREDENTIAL }); // 调用重连逻辑
 	};
 
 	return socket
