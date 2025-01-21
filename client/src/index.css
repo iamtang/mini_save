@@ -145,7 +145,7 @@ html {
   margin: 0 0 0.75rem;
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.6;
+  line-height: 1.2;
   font-size: 0.95rem;
   color: var(--text-primary);
   display: -webkit-box;
@@ -179,6 +179,7 @@ html {
   word-break: break-all;
   color: var(--primary-color);
   flex: 1;
+  line-height: 1.2;
   font-size: 0.95rem;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -206,6 +207,12 @@ html {
   transition: width 0.3s ease;
 }
 
+.btns-box{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.star-button,
 .delete-button {
   position: relative;
   flex-shrink: 0;
@@ -214,7 +221,7 @@ html {
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 0.5rem;
+  /* padding: 0.5rem; */
   border-radius: 50%;
   opacity: 0;
   transition: all 0.2s ease;
@@ -225,12 +232,19 @@ html {
   margin-right: -0.5rem;
 }
 
-.content-item:hover .delete-button {
+.star-button.checked{
+  color: #2196f3;
+}
+
+.content-item:hover .delete-button,
+.content-item:hover .star-button {
   opacity: 1;
 }
 
+
+
 .delete-button:hover {
-  background-color: rgba(244, 67, 54, 0.1);
+  /* background-color: rgba(244, 67, 54, 0.1); */
   color: #f44336;
 }
 
@@ -433,7 +447,7 @@ textarea:focus {
     transform: scale(0.98);
     transition: transform 0.1s ease;
   }
-  
+  .star-button,
   .delete-button {
     opacity: 1;
     margin-top: 0;

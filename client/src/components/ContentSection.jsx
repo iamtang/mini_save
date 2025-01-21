@@ -5,6 +5,8 @@ const ContentSection = ({
   onCopyText, 
   onDeleteText, 
   onDeleteFile, 
+  onStarText,
+  onStarFile,
   onDownload,
   escapeHtml,
   formatFileSize,
@@ -20,6 +22,7 @@ const ContentSection = ({
             item={item}
             onCopy={onCopyText}
             onDelete={'content' in item ? onDeleteText : onDeleteFile}
+            onStar={'content' in item ? onStarText : onStarFile}
             onDownload={onDownload}
             escapeHtml={escapeHtml}
             formatFileSize={formatFileSize}

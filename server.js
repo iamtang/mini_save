@@ -2,6 +2,7 @@ const express = require('express')
 const multer = require('multer')
 const fs = require('fs')
 const path = require('path')
+const cors = require('cors')
 const log = require('electron-log/main');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
@@ -15,7 +16,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
   app.set('view engine', 'ejs');
   // 设置模板文件的目录
   app.set('views', path.join(__dirname, 'dist'));
-  // app.use(cors())
+  app.use(cors())
   app.use(express.json())
   app.use(express.static(path.join(__dirname, './dist/')));
 
@@ -136,7 +137,17 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
     const { text } = req.body
 
     const userData = loadUserData(credential)
+    let star = 0
+    // // 查找是否已存在相同的文本
+    const existingIndex = userData.texts.findIndex(item => item.content === text);
+    if (existingIndex !== -1){
+      const existingItem = userData.texts[existingIndex];
+      star = existingItem.star
+      userData.texts.splice(existingIndex, 1);  // 移除原来位置
+    }
+    
     const data = {
+      star,
       id: Date.now(),
       content: text,
       timestamp: new Date().toISOString()
@@ -144,8 +155,10 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
     userData.texts.unshift(data)
 
     // 保证 texts 数组长度不超过 20 条
-    if (userData.texts.length > MAX_TEXT_NUMBER) {
-      userData.texts = userData.texts.slice(0, MAX_TEXT_NUMBER); // 截取前 20 条记录
+    while (userData.texts.filter(item => !item.star).length > MAX_TEXT_NUMBER) {
+      const removeIndex = userData.texts.findLastIndex(item => item.star !== 1);
+      userData.texts.splice(removeIndex, 1);
+      // userData.texts = userData.texts.slice(0, MAX_TEXT_NUMBER); // 截取前 20 条记录
     }
 
     saveUserData(credential, userData)
@@ -170,10 +183,49 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
     res.json({ success: true })
   })
 
+  app.put('/api/star/text/:credential/:id', async (req, res) => {
+    const { credential, id } = req.params
+    
+    if (!storage_data[credential]) {
+      return res.status(404).send('User not found')
+    }
+
+    const textIndex = storage_data[credential].texts.findIndex(t => t.id === parseInt(id))
+    if (textIndex === -1) {
+      return res.status(404).send('Text not found')
+    }
+    storage_data[credential].texts[textIndex].star = !!storage_data[credential].texts[textIndex].star ? 0 : 1
+    saveUserData(credential, storage_data[credential])
+    res.json({ success: true })
+  })
+
+  app.put('/api/star/file/:credential/:id', async (req, res) => {
+    const { credential, id } = req.params
+    
+    if (!storage_data[credential]) {
+      return res.status(404).send('User not found')
+    }
+    
+    const fileIndex = storage_data[credential].files.findIndex(f => f.id === parseInt(id))
+    if (fileIndex === -1) {
+      return res.status(404).send('File not found')
+    }
+    
+    try {
+      // 从数据中移除
+      storage_data[credential].files[fileIndex].star = !!storage_data[credential].files[fileIndex].star ? 0 : 1
+      saveUserData(credential, storage_data[credential])
+      res.json({ success: true })
+    } catch (error) {
+      log.error('Delete error:', error)
+      res.status(500).send('Error deleting file')
+    }
+  })
+
   app.post('/api/upload/:credential', upload.single('file'), async (req, res) => {
     const { credential } = req.params
     const file = req.file
-    
+    let star = 0
     if (!file) {
       return res.status(400).send('No file uploaded')
     }
@@ -185,10 +237,25 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
       if (!storage_data[credential]) {
         storage_data[credential] = loadUserData(credential)
       }
+
+      const existingFileIndex = storage_data[credential].files.findIndex(f => f.filename === originalname);
+
+      // 如果文件已经存在，删除旧的文件
+      if (existingFileIndex !== -1) {
+        const oldFile = storage_data[credential].files[existingFileIndex];
+        star = oldFile.star
+        try {
+          fs.unlinkSync(oldFile.systemPath); // 删除旧文件
+        } catch (err) {
+          log.error(`删除文件 ${oldFile.systemPath} 失败:`, err);
+        }
+        storage_data[credential].files.splice(existingFileIndex, 1); // 从列表中移除旧文件
+      }
       
       // 获取文件大小
       const stats = fs.statSync(file.path)
       const data = {
+        star,
         id: Date.now(),
         filename: originalname,
         systemPath: file.path,
@@ -198,19 +265,22 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
       storage_data[credential].files.unshift(data)
 
       // 检查并删除多余文件
-      if (storage_data[credential].files.length > MAX_FILE_NUMBER) {
+      while (storage_data[credential].files.filter(item => !item.star).length > MAX_FILE_NUMBER) {
         // 删除多余的文件记录和文件系统中的实际文件
-        const extraFiles = storage_data[credential].files.slice(MAX_FILE_NUMBER);
-        extraFiles.forEach(file => {
-            try {
-                fs.unlinkSync(file.systemPath); // 删除文件系统中的文件
-            } catch (err) {
-              log.error(`Failed to delete file ${file.systemPath}:`, err);
-            }
-        });
+        const removeIndex =  storage_data[credential].files.findLastIndex(item => item.star !== 1);
+        // userData.texts.splice(removeIndex, 1);
+        // const extraFiles = storage_data[credential].files.slice(MAX_FILE_NUMBER);
+        // extraFiles.forEach(file => {
+        try {
+            fs.unlinkSync(storage_data[credential].files[removeIndex].systemPath); // 删除文件系统中的文件
+        } catch (err) {
+          log.error(`Failed to delete file ${file.systemPath}:`, err);
+        }
+        // });
 
         // 保留最新的 MAX_FILE_NUMBER 条文件记录
-        storage_data[credential].files = storage_data[credential].files.slice(0, MAX_FILE_NUMBER);
+        storage_data[credential].files.splice(removeIndex, 1);
+        // storage_data[credential].files = storage_data[credential].files.slice(0, MAX_FILE_NUMBER);
     }
 
       saveUserData(credential, storage_data[credential])

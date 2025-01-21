@@ -272,6 +272,50 @@ function App() {
     }
   }
 
+  const handleStarText = async (id) => {
+    try {
+      await fetch(`${window.API_URL}/api/star/text/${credential}/${id}`, {
+        method: 'PUT'
+      })
+      
+      // 只删除非上传中且 ID 匹配的文件
+      setContents(prev => ({
+        ...prev,
+        texts: prev.texts.map(item => {
+          if(item.id === id){
+            return { ...item, star: item.star ? 0 : 1}
+          }else{
+            return item
+          }
+        })
+      }))
+    } catch (error) {
+      console.error('Star error:', error)
+    }
+  }
+
+  const handleStarFile = async (id) => {
+    try {
+      await fetch(`${window.API_URL}/api/star/file/${credential}/${id}`, {
+        method: 'PUT'
+      })
+      
+      // 只删除非上传中且 ID 匹配的文件
+      setContents(prev => ({
+        ...prev,
+        files: prev.files.map(item => {
+          if(item.id === id){
+            return { ...item, star: item.star ? 0 : 1}
+          }else{
+            return item
+          }
+        })
+      }))
+    } catch (error) {
+      console.error('Star error:', error)
+    }
+  }
+
   const handleDeleteFile = async (id) => {
     try {
       await fetch(`${window.API_URL}/api/file/${credential}/${id}`, {
@@ -365,6 +409,8 @@ function App() {
         onCopyText={handleCopyText}
         onDeleteText={handleDeleteText}
         onDeleteFile={handleDeleteFile}
+        onStarText={handleStarText}
+        onStarFile={handleStarFile}
         onDownload={handleDownload}
         escapeHtml={escapeHtml}
         formatFileSize={formatFileSize}

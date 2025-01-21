@@ -1,6 +1,6 @@
-import { DeleteIcon } from './Icons'
+import { DeleteIcon, StarIcon } from './Icons'
 
-const ContentItem = ({ item, onCopy, onDelete, onDownload, escapeHtml, formatFileSize }) => {
+const ContentItem = ({ item, onCopy, onDelete, onStar, onDownload, escapeHtml, formatFileSize }) => {
   if ('content' in item) {
     // 文本记录
     return (
@@ -13,16 +13,28 @@ const ContentItem = ({ item, onCopy, onDelete, onDownload, escapeHtml, formatFil
           <p dangerouslySetInnerHTML={{ __html: escapeHtml(item.content) }}></p>
           <small>{new Date(item.timestamp).toLocaleString()}</small>
         </div>
-        <button 
-          className="delete-button" 
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(item.id)
-          }}
-          title="删除"
-        >
-          <DeleteIcon />
-        </button>
+        <div className='btns-box'>
+          {/* <button 
+            className="delete-button" 
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(item.id)
+            }}
+            title="删除"
+          >
+            <DeleteIcon />
+          </button> */}
+          <button 
+            className={item.star ? "star-button checked" : "star-button" }
+            onClick={(e) => {
+              e.stopPropagation()
+              onStar(item.id)
+            }}
+            title="收藏"
+          >
+            <StarIcon />
+          </button>
+        </div>
       </div>
     )
   }
@@ -59,15 +71,15 @@ const ContentItem = ({ item, onCopy, onDelete, onDownload, escapeHtml, formatFil
       </div>
       {!item.uploading && (
         <button 
-          className="delete-button" 
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(item.id)
-          }}
-          title="删除"
-        >
-          <DeleteIcon />
-        </button>
+        className={item.star ? "star-button checked" : "star-button" }
+        onClick={(e) => {
+          e.stopPropagation()
+          onStar(item.id)
+        }}
+        title="收藏"
+      >
+        <StarIcon />
+      </button>
       )}
     </div>
   )
