@@ -72,7 +72,7 @@ const Login = ({ setCredential, onLogin }) => {
 
   return (
     <div className="auth-container">
-      <h1>远程U盘</h1>
+      <h1>迷你保存</h1>
       <div className="code-inputs">
         {code.map((char, index) => (
           <input
