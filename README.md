@@ -14,3 +14,5 @@
 - 产物在build-output目录
 
 node >= 18
+
+[安装包](https://github.com/iamtang/mini_save/releases/)
