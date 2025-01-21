@@ -1,7 +1,7 @@
 {
     "SERVER_ADDRESS": "",
     "PORT": 3000,
-    "CREDENTIAL": "123123",
+    "CREDENTIAL": "",
     "MAX_TEXT_NUMBER": 20,
     "MAX_FILE_NUMBER": 10,
     "MAX_FILE_SIZE": 50

@@ -1,11 +1,13 @@
 const { app, Tray, Menu, shell } =  require('electron');
 const log = require('electron-log/main');
 const path =  require('path');
+const fs =  require('fs');
 const onCopy =require('./onCopy.js')
 const Server =  require('./server/index.js');
 const pkg = require('./package.json')
 const { getIPAddress } = require('./utils.js')
-const config = require('./config.json')
+const config = require(path.join(app.getPath('userData'), 'config.json'))
+const createSettingWindow = require('./page/setting/setting.js')
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
 
@@ -28,8 +30,19 @@ function stopServer() {
   }
 }
 
+function initConfig(){
+    const userDataPath = app.getPath('userData'); // 获取 userData 路径
+    const targetConfigPath = path.join(userDataPath, 'config.json');
+    const sourceConfigPath = path.join(__dirname, 'config.json');
+    if (!fs.existsSync(targetConfigPath)) {
+        // 如果没有，则从当前目录复制 config.json 到 userData 路径
+        fs.copyFileSync(sourceConfigPath, targetConfigPath);
+    }
+}
+
 // Electron 启动
 app.whenReady().then(() => {
+  initConfig()
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
@@ -39,7 +52,7 @@ app.whenReady().then(() => {
   const contextMenu = Menu.buildFromTemplate([
     { label: '打开网站', click: () => shell.openExternal(`http://${config.url}`) },
     { label: '管理储存', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
-    { label: `版本:${pkg.version}`, enabled: false},
+    { label: `设置`, click: createSettingWindow },
     { label: '退出', click: () => app.quit() },
   ]);
 

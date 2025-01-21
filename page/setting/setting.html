@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: #f0f0f0;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: #e0e0e0;
+            border-bottom: 1px solid #d0d0d0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 15px;
+            text-align: center;
+            font-size: 14px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .tab.active {
+            background-color: white;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #0078d4;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #d0d0d0;
+            border-top: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 6px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #0078d4;
+            background-color: #fff;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: flex-end;
+            padding: 10px 20px;
+            background-color: #f8f8f8;
+            border-top: 1px solid #d0d0d0;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005ea6;
+        }
+
+        button:active {
+            background-color: #004e8c;
+        }
+    </style>
+</head>
+<body>
+    <div class="content" id="content">
+        <div id="general" class="tab-content">
+            <div class="form-group">
+                <label for="SERVER_ADDRESS">服务地址</label>
+                <input type="text" id="SERVER_ADDRESS" placeholder="请输入服务地址，不填写为服务端：192.168.1.1">
+            </div>
+            <div class="form-group">
+                <label for="PORT">端口</label>
+                <input type="number" id="PORT" value="3000">
+            </div>
+            <div class="form-group">
+                <label for="CREDENTIAL">口令</label>
+                <input type="text" id="CREDENTIAL" maxlength="6" placeholder="请输入口令">
+            </div>
+            <div class="form-group">
+                <label for="MAX_TEXT_NUMBER">文本最大条数</label>
+                <input type="number" id="MAX_TEXT_NUMBER" value="20" placeholder="默认：20">
+            </div>
+            <div class="form-group">
+                <label for="MAX_FILE_NUMBER">文件最大个数</label>
+                <input type="number" id="MAX_FILE_NUMBER" value="10" placeholder="默认：10">
+            </div>
+            <div class="form-group">
+                <label for="MAX_FILE_SIZE">文件最大SIZE(MB)</label>
+                <input type="number" id="MAX_FILE_SIZE" value="50" placeholder="默认：50">
+            </div>
+        </div>
+    </div>
+    <div class="buttons">
+        <button id="applyButton">应用</button>
+    </div>
+
+    <script>
+        // const tabs = document.querySelectorAll('.tab');
+        // const tabContents = document.querySelectorAll('.tab-content');
+
+        // tabs.forEach(tab => {
+        //     tab.addEventListener('click', () => {
+        //         // Remove active class from all tabs
+        //         tabs.forEach(t => t.classList.remove('active'));
+        //         tab.classList.add('active');
+
+        //         // Hide all tab contents
+        //         tabContents.forEach(content => (content.style.display = 'none'));
+
+        //         // Show the selected tab content
+        //         const target = tab.getAttribute('data-tab');
+        //         document.getElementById(target).style.display = 'block';
+        //     });
+        // });
+
+        window.electronAPI.loadSettings().then(settings => {
+            document.getElementById('SERVER_ADDRESS').value = settings.SERVER_ADDRESS || '';
+            document.getElementById('PORT').value = settings.PORT || 3000;
+            document.getElementById('CREDENTIAL').value = settings.CREDENTIAL || '';
+            document.getElementById('MAX_TEXT_NUMBER').value = settings.MAX_TEXT_NUMBER || '';
+            document.getElementById('MAX_FILE_NUMBER').value = settings.MAX_FILE_NUMBER || '';
+            document.getElementById('MAX_FILE_SIZE').value = settings.MAX_FILE_SIZE || '';
+        });
+
+        document.getElementById('applyButton').addEventListener('click', () => {
+            const settings = {
+                SERVER_ADDRESS: document.getElementById('SERVER_ADDRESS').value,
+                PORT: document.getElementById('PORT').value,
+                CREDENTIAL: document.getElementById('CREDENTIAL').value,
+                MAX_TEXT_NUMBER: document.getElementById('MAX_TEXT_NUMBER').value,
+                MAX_FILE_NUMBER: document.getElementById('MAX_FILE_NUMBER').value,
+                MAX_FILE_SIZE: document.getElementById('MAX_FILE_SIZE').value,
+            };
+
+            // Send settings to the main process
+            window.electronAPI.saveSettings(settings);
+        });
+        document.addEventListener('keydown', (event) => {
+           if (event.key === 'Escape') {
+              // Esc 取消
+              window.electronAPI.hideSettings(); // 通知主进程取消
+            }
+        });
+    </script>
+</body>
+</html>

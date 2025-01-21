@@ -4,7 +4,7 @@ const fs = require('fs')
 // const cors = require('corZs')
 const path = require('path')
 
-module.exports = (_app, { PORT, MAX_TEXT_NUMBER, MAX_FILE_NUMBER }) => {
+module.exports = (_app, { PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 }) => {
   const userDataPath = _app.getPath('userData');
   const DATA_DIR = path.join(userDataPath, 'data')
   const UPLOADS_DIR = path.join(userDataPath, 'uploads')
