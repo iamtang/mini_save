@@ -58,8 +58,9 @@ function onMessage(msg, { url, CREDENTIAL }){
 function initServerWss(server, { url, CREDENTIAL }) {
 	const wss = new WebSocket.Server({ noServer: true });
 	// 处理 WebSocket 连接
-	wss.on('connection', (ws) => {
-		log.info('客户端连接成功');
+	wss.on('connection', (ws, req) => {
+        const roomID = req.url.slice(1); // 获取路径部分去掉 "/"
+		log.info('客户端连接成功', roomID);
 		// 监听客户端发送的消息
 		ws.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
 	});
@@ -89,7 +90,7 @@ function reConnentClientWss({ url, CREDENTIAL }) {
 }
 
 function initClientWss({ url, CREDENTIAL }) {
-	const socket = new WebSocket(`ws://${url}`);
+	const socket = new WebSocket(`ws://${url}/${CREDENTIAL}`);
 	socket.on('open', () => {
 		log.info('WebSocket 连接成功');
 		socket.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
