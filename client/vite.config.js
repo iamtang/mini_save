@@ -20,7 +20,8 @@ function getIPAddress() {
 // https://vite.dev/config/
 export default defineConfig({
   define: {
-    // 'API_URL': JSON.stringify(`http://10.4.99.195:3000`)
+    // 'VITE_API_URL': JSON.stringify(`http://10.4.99.195:3000`)
+    'API_URL': JSON.stringify('')
   },
   plugins: [
     react(),

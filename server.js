@@ -13,9 +13,6 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
   const UPLOADS_DIR = path.join(userDataPath, 'uploads')
 
   const app = express();
-  app.set('view engine', 'ejs');
-  // 设置模板文件的目录
-  app.set('views', path.join(__dirname, 'dist'));
   // app.use(cors())
   app.use(express.json())
   app.use(express.static(path.join(__dirname, './dist/')));
@@ -106,8 +103,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
 
 
   app.get('/', (req, res) => {
-    res.render('index', {API_URL: `http://${url}`}); 
-    // res.sendFile(__dirname + './dist/index.html');
+    res.sendFile(__dirname + './dist/index.html');
   });
 
   // API 路由
@@ -210,7 +206,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
     if (fileIndex === -1) {
       return res.status(404).send('File not found')
     }
-    
+  
     try {
       // 从数据中移除
       storage_data[credential].files[fileIndex].star = !!storage_data[credential].files[fileIndex].star ? 0 : 1
