@@ -1,7 +1,0 @@
-{
-    "marscode.chatLanguage": "cn",
-    "marscode.codeCompletionPro": {
-        "enableCodeCompletionPro": false
-    },
-    "marscode.enableInlineCommand": true
-}
