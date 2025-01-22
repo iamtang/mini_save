@@ -13,7 +13,6 @@ let preContent = null;
 let currentContent = null;
 let socket = null
 
-
 function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
     if(!CREDENTIAL) return null
     socket = isServer ? initServerWss(server, {url, CREDENTIAL}) : initClientWss({url, CREDENTIAL})

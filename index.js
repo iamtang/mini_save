@@ -6,7 +6,6 @@ const onCopy =require('./onCopy.js')
 const Server =  require('./server.js');
 const pkg = require('./package.json')
 const { getIPAddress } = require('./utils.js')
-const createSettingWindow = require('./page/setting/setting.js')
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
 
@@ -53,7 +52,10 @@ app.whenReady().then(() => {
   const contextMenu = Menu.buildFromTemplate([
     { label: '打开网址', click: () => shell.openExternal(`http://${config.url}`) },
     { label: '管理', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
-    { label: `设置`, click: createSettingWindow },
+    { label: `设置`, click: () => {
+      const createSettingWindow = require('./page/setting/setting.js'); 
+      createSettingWindow()
+    } },
     { label: '退出', click: () => app.quit() },
   ]);
 
