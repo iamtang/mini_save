@@ -7,7 +7,9 @@
     "dev": "electron .",
     "start": "electron-builder --dir",
     "publish": "electron-builder --publish always",
-    "package": "NODE_ENV=production electron-builder --mac"
+    "clean": "electron-builder --clear-cache",
+    "package": "NODE_ENV=production electron-builder --mac",
+    "package-win": "set NODE_ENV=production && electron-builder --win"
   },
   "author": "iamtang",
   "license": "ISC",
@@ -31,6 +33,9 @@
     "extraResources": [
       "client/**/*"
     ],
+    "win": {
+      "icon": "icons/logo.ico"
+    },
     "mac": {
       "icon": "icons/logo.icns",
       "target": [
