@@ -37,4 +37,4 @@ node >= 18
 > 因为移动端不支持后台读取剪切板，所以无法app实现，只能依靠h5页面
 > 输入对应的口令，点击所需的内容复制或下载保存
 
-![image](https://github.com/user-attachments/assets/8325dcc6-063b-4a52-8885-435e2e256e15)
+<img src="https://github.com/user-attachments/assets/8325dcc6-063b-4a52-8885-435e2e256e15" width="300" />
