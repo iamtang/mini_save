@@ -4,7 +4,7 @@ const fs = require('fs')
 const path = require('path')
 // const cors = require('cors')
 const log = require('electron-log/main');
-const onCopy =require('./onCopy.js')
+const onCopy =require('./onCopy2.js')
 const { getIPAddress } = require('./utils.js')
 let ip = getIPAddress()
 log.transports.file.resolvePathFn = () => path.join(process.cwd(), 'userData/main.log');
