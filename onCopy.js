@@ -46,7 +46,7 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
 function onMessage(msg, { url, CREDENTIAL, roomID }){
     const data = JSON.parse(msg);
     // 口令不一致，无需同步
-    if(roomID !== CREDENTIAL) return;
+    if(roomID !== CREDENTIAL && roomID) return;
     // data.type !== 'ping' && log.info(data, '=======')
     if (data.type === 'text') {
         currentContent = preContent = data.data
