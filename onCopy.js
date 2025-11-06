@@ -13,10 +13,9 @@ let preContent = null;
 let currentContent = null;
 // 房间管理对象
 global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
-function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
+function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 3}){
     if(!CREDENTIAL) return null
 	// 服务端
-	console.log(isServer)
 	if(isServer){
 		initServerWss(server, {url, CREDENTIAL})
 	}

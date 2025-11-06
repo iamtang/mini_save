@@ -4,5 +4,5 @@
     "CREDENTIAL": "",
     "MAX_TEXT_NUMBER": 20,
     "MAX_FILE_NUMBER": 10,
-    "MAX_FILE_SIZE": 50
+    "MAX_FILE_SIZE": 3
 }
