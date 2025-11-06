@@ -19,6 +19,7 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50, linux}){
 
 function initServerWss(server, { url, CREDENTIAL }) {
 	const wss = new WebSocket.Server({ noServer: true });
+	console.log(wss, '=============')
 	// 处理 WebSocket 连接
 	wss.on('connection', (ws, req) => {
         const roomID = req.url.slice(1); // 获取路径部分去掉 "/"
@@ -59,34 +60,6 @@ function initServerWss(server, { url, CREDENTIAL }) {
             }
 		}
 	}
-}
-
-function reConnentClientWss({ url, CREDENTIAL }) {
-	setTimeout(() => {
-		console.log('正在重连')
-		socket = initClientWss({ url, CREDENTIAL });
-	}, 5000)
-}
-
-function initClientWss({ url, CREDENTIAL }) {
-	const socket = new WebSocket(`ws://${url}/${CREDENTIAL}`);
-	socket.on('open', () => {
-		console.log('WebSocket 连接成功');
-		socket.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
-		setInterval(() => {
-			socket.send(JSON.stringify({ type: 'ping' }));
-		}, 30000);
-	});
-
-	socket.onerror = (error) => {
-		socket.close(); // 确保触发 onclose 事件
-	};
-
-	socket.onclose = () => {
-		reConnentClientWss({ url, CREDENTIAL }); // 调用重连逻辑
-	};
-
-	return socket
 }
 
 
