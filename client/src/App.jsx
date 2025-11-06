@@ -89,7 +89,7 @@ function App() {
       await fetch(`${API_URL}/api/text/${credential}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text, from: 'h5' })
       })
       setText('')
       // 重置 textarea 高度
@@ -135,6 +135,7 @@ function App() {
   const uploadFile = async (file) => {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('from', 'h5')
 
     try {
       const xhr = new XMLHttpRequest()

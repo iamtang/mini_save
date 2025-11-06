@@ -2,6 +2,7 @@ const express = require('express')
 const multer = require('multer')
 const fs = require('fs')
 const path = require('path')
+const WebSocket = require('ws');
 // const cors = require('cors')
 const log = require('electron-log/main');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
@@ -19,6 +20,16 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
 
   // 存储数据的对象
   let storage_data = {}
+
+  function broadcast(credential, msg, from){
+    if(rooms.get(credential) && from === 'h5'){
+      for (const client of rooms.get(credential)) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(msg);
+        }
+      }
+    }
+  }
 
   // 确保用户目录存在
   function ensureUserDirectory(credential) {
@@ -159,6 +170,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
 
     saveUserData(credential, userData)
     storage_data[credential] = userData
+    broadcast(credential, JSON.stringify({type: 'text', data: data.content}), 'h5')
     res.json({ success: true, ...data })
   })
 
@@ -280,6 +292,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
     }
 
       saveUserData(credential, storage_data[credential])
+      broadcast(credential, JSON.stringify({type: 'file', data: data.id}), 'h5')
       res.json({ success: true, ...data })
     } catch (error) {
       log.error('Upload error:', error)
