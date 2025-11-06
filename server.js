@@ -141,7 +141,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
 
   app.post('/api/text/:credential', async (req, res) => {
     const { credential } = req.params
-    const { text } = req.body
+    const { text, from } = req.body
 
     const userData = loadUserData(credential)
     let star = 0
@@ -170,7 +170,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
 
     saveUserData(credential, userData)
     storage_data[credential] = userData
-    broadcast(credential, JSON.stringify({type: 'text', data: data.content}), 'h5')
+    broadcast(credential, JSON.stringify({type: 'text', data: data.content}), from)
     res.json({ success: true, ...data })
   })
 
@@ -233,6 +233,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
   app.post('/api/upload/:credential', upload.single('file'), async (req, res) => {
     const { credential } = req.params
     const file = req.file
+    const from = req.body.from
     let star = 0
     if (!file) {
       return res.status(400).send('No file uploaded')
@@ -292,7 +293,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
     }
 
       saveUserData(credential, storage_data[credential])
-      broadcast(credential, JSON.stringify({type: 'file', data: data.id}), 'h5')
+      broadcast(credential, JSON.stringify({type: 'file', data: data.id}), from)
       res.json({ success: true, ...data })
     } catch (error) {
       log.error('Upload error:', error)

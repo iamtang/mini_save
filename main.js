@@ -64,6 +64,7 @@ function initServerWss(server) {
 
 function broadcast(credential, msg, from){
 	if(rooms.get(credential) && from === 'h5'){
+		console.log(msg, from)
 		for (const client of rooms.get(credential)) {
 			if (client.readyState === WebSocket.OPEN) {
 				client.send(msg);
@@ -220,7 +221,7 @@ app.post("/api/text/:credential", async (req, res) => {
 
     saveUserData(credential, userData);
     storage_data[credential] = userData;
-	broadcast(credential, JSON.stringify({type: 'text', data: data.content}), 'h5')
+	broadcast(credential, JSON.stringify({type: 'text', data: data.content}), from)
 	
     res.json({ success: true, ...data });
 });
@@ -368,7 +369,7 @@ app.post("/api/upload/:credential", upload.single("file"), async (req, res) => {
         }
 
         saveUserData(credential, storage_data[credential]);
-		broadcast(credential, JSON.stringify({type: 'file', data: data.id}), 'h5')
+		broadcast(credential, JSON.stringify({type: 'file', data: data.id}), from)
         res.json({ success: true, ...data });
     } catch (error) {
         console.log("Upload error:", error);
