@@ -1,4 +1,4 @@
-const { clipboard, app } = require('electron');
+const { clipboard, app, powerMonitor } = require('electron');
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
@@ -55,7 +55,7 @@ function onMessage(msg, { url, CREDENTIAL, roomID }){
     if (data.type === 'text') {
         currentContent = preContent = data.data
         clipboard.writeText(currentContent)
-    } else if (data.type === 'file') {
+    } else if (data.type === 'file' && powerMonitor.getSystemIdleTime() < 300) {
         downloadFile(`http://${url}/api/download/${CREDENTIAL}/${data.data}`).then(res => {
             currentContent = preContent = `file://${res}`
             clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
