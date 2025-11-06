@@ -13,39 +13,39 @@ let preContent = null;
 let currentContent = null;
 // 房间管理对象
 global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
-
 function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
     if(!CREDENTIAL) return null
 	// 服务端
+	console.log(isServer)
 	if(isServer){
-		const socket = initServerWss(server, {url, CREDENTIAL})
-			currentContent = clipboard.read('public.file-url') || clipboard.readText();
-			setInterval(async () => {
-				currentContent = clipboard.read('public.file-url') || clipboard.readText();
-				if(currentContent === preContent) return null;
-				if(clipboard.read('public.file-url')){
-					const filePath = decodeURIComponent(currentContent.replace('file://',''));
-					const stats = fs.statSync(filePath);
-					if(stats.size > 1024 * 1024 * MAX_FILE_SIZE){
-						return null
-					}
-					const form = new FormData();
-					form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
-					const res = await axios.post(`http://${url}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
-					socket.send(JSON.stringify({type: 'file', data: res.data.id}))
-					// console.log('===文件===')
-				}else if(currentContent){
-					let currentContent = clipboard.readText();
-					await axios.post(`http://${url}/api/text/${CREDENTIAL}`, {text: currentContent})
-					socket.send(JSON.stringify({type: 'text', data: currentContent}))
-					// log.info('===文本===')
-				}
-				preContent = currentContent
-			}, 1000);
+		initServerWss(server, {url, CREDENTIAL})
 	}
 
 	// 客户端
-	initClientWss({url, CREDENTIAL})
+	const socket = initClientWss({url, CREDENTIAL})
+	currentContent = clipboard.read('public.file-url') || clipboard.readText();
+	setInterval(async () => {
+		currentContent = clipboard.read('public.file-url') || clipboard.readText();
+		if(currentContent === preContent) return null;
+		if(clipboard.read('public.file-url')){
+			const filePath = decodeURIComponent(currentContent.replace('file://',''));
+			const stats = fs.statSync(filePath);
+			if(stats.size > 1024 * 1024 * MAX_FILE_SIZE){
+				return null
+			}
+			const form = new FormData();
+			form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
+			const res = await axios.post(`http://${url}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
+			socket.send(JSON.stringify({type: 'file', data: res.data.id}))
+			// console.log('===文件===')
+		}else if(currentContent){
+			let currentContent = clipboard.readText();
+			await axios.post(`http://${url}/api/text/${CREDENTIAL}`, {text: currentContent})
+			socket.send(JSON.stringify({type: 'text', data: currentContent}))
+			// log.info('===文本===')
+		}
+		preContent = currentContent
+	}, 1000);
 }
 
 function onMessage(msg, { url, CREDENTIAL, roomID }){

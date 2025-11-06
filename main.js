@@ -24,13 +24,12 @@ let storage_data = {};
 // 房间管理对象
 const rooms = new Map(); // 使用 Map 存储房间和客户端连接
 
-function onCopy(server, { url, CREDENTIAL}){
-	if(!CREDENTIAL) return null
-	initServerWss(server, {url, CREDENTIAL})
+function onCopy(server){
+	initServerWss(server)
 }
 
 
-function initServerWss(server, { url, CREDENTIAL }) {
+function initServerWss(server) {
 	const wss = new WebSocket.Server({ noServer: true });
 	// 处理 WebSocket 连接
 	wss.on('connection', (ws, req) => {
@@ -447,12 +446,5 @@ app.get("/api/download/:credential/:fileId", async (req, res) => {
 onCopy(
     app.listen(PORT, () => {
         console.log(`Server is running at ${PORT}`, `${ip}:${PORT}`);
-    }),
-    {
-        isServer: true,
-        url: `${ip}:${PORT}`,
-        CREDENTIAL: "123123",
-        MAX_FILE_SIZE: 50,
-        linux: true,
-    }
+    })
 );
