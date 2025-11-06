@@ -1,17 +1,10 @@
-const axios = require('axios');
-const FormData = require('form-data');
-const fs = require('fs');
-const path = require('path');
 const WebSocket = require('ws');
-const { downloadFile } = require('./utils.js')
 
-let preContent = null;
-let currentContent = null;
 let socket = null
 // 房间管理对象
 const rooms = new Map(); // 使用 Map 存储房间和客户端连接
 
-function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50, linux}){
+function onCopy(server, { url, CREDENTIAL}){
     if(!CREDENTIAL) return null
     socket = initServerWss(server, {url, CREDENTIAL})
 }
@@ -19,7 +12,6 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50, linux}){
 
 function initServerWss(server, { url, CREDENTIAL }) {
 	const wss = new WebSocket.Server({ noServer: true });
-	console.log(wss, '=============')
 	// 处理 WebSocket 连接
 	wss.on('connection', (ws, req) => {
         const roomID = req.url.slice(1); // 获取路径部分去掉 "/"
@@ -45,7 +37,6 @@ function initServerWss(server, { url, CREDENTIAL }) {
 
 	// 在 HTTP 服务器上升级到 WebSocket
 	server.on('upgrade', (request, socket, head) => {
-		console.log('========')
 		wss.handleUpgrade(request, socket, head, (ws) => {
 			wss.emit('connection', ws, request);
 		});
