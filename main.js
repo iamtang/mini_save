@@ -4,6 +4,9 @@ const fs = require('fs')
 const path = require('path')
 // const cors = require('cors')
 const log = require('electron-log/main');
+const onCopy =require('./onCopy.js')
+const { getIPAddress } = require('./utils.js')
+let ip = getIPAddress()
 log.transports.file.resolvePathFn = () => path.join(process.cwd(), 'userData/main.log');
 log.initialize()
 const PORT = 3000
@@ -348,8 +351,8 @@ try {
 	res.status(500).send('Error downloading file')
 }
 })
-
+onCopy(app, {isServer: true, url: `${ip}:${PORT}`, CREDENTIAL: '123123', MAX_FILE_SIZE: 50, linux: true})
 app.listen(PORT, () => {
-log.info(`Server is running at ${PORT}`);
+	log.info(`Server is running at ${PORT}`);
 });
 // }
