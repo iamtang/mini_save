@@ -64,7 +64,6 @@ function initServerWss(server) {
 
 function broadcast(credential, msg, from){
 	if(rooms.get(credential) && from === 'h5'){
-		console.log(msg, from)
 		for (const client of rooms.get(credential)) {
 			if (client.readyState === WebSocket.OPEN) {
 				client.send(msg);
