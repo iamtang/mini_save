@@ -45,6 +45,7 @@ function initServerWss(server, { url, CREDENTIAL }) {
 
 	// 在 HTTP 服务器上升级到 WebSocket
 	server.on('upgrade', (request, socket, head) => {
+		console.log('========')
 		wss.handleUpgrade(request, socket, head, (ws) => {
 			wss.emit('connection', ws, request);
 		});
