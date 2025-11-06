@@ -15,10 +15,9 @@ let socket = null
 // 房间管理对象
 const rooms = new Map(); // 使用 Map 存储房间和客户端连接
 
-function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50, linux}){
+function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 50}){
     if(!CREDENTIAL) return null
     socket = isServer ? initServerWss(server, {url, CREDENTIAL}) : initClientWss({url, CREDENTIAL})
-	if(linux) return
     currentContent = clipboard.read('public.file-url') || clipboard.readText();
     setInterval(async () => {
         currentContent = clipboard.read('public.file-url') || clipboard.readText();

@@ -4,10 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
 const { downloadFile } = require('./utils.js')
-const log = require('electron-log/main');
 
-log.transports.file.resolvePathFn = () => path.join(process.cwd(), 'userData/main.log');
-log.initialize()
 let preContent = null;
 let currentContent = null;
 let socket = null
@@ -30,7 +27,7 @@ function initServerWss(server, { url, CREDENTIAL }) {
         }
         // 将客户端加入房间
         rooms.get(roomID).add(ws);
-		log.info('客户端连接成功', roomID);
+		console.log('客户端连接成功', roomID);
 		// 监听客户端发送的消息
 		ws.on('message', (msg) => {
             // 同步给同口令的设备
@@ -66,7 +63,7 @@ function initServerWss(server, { url, CREDENTIAL }) {
 
 function reConnentClientWss({ url, CREDENTIAL }) {
 	setTimeout(() => {
-		log.info('正在重连')
+		console.log('正在重连')
 		socket = initClientWss({ url, CREDENTIAL });
 	}, 5000)
 }
@@ -74,7 +71,7 @@ function reConnentClientWss({ url, CREDENTIAL }) {
 function initClientWss({ url, CREDENTIAL }) {
 	const socket = new WebSocket(`ws://${url}/${CREDENTIAL}`);
 	socket.on('open', () => {
-		log.info('WebSocket 连接成功');
+		console.log('WebSocket 连接成功');
 		socket.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
 		setInterval(() => {
 			socket.send(JSON.stringify({ type: 'ping' }));

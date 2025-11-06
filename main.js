@@ -3,12 +3,9 @@ const multer = require('multer')
 const fs = require('fs')
 const path = require('path')
 // const cors = require('cors')
-const log = require('electron-log/main');
-const onCopy =require('./onCopy2.js')
+const onCopy = require('./onCopy2.js')
 const { getIPAddress } = require('./utils.js')
 let ip = getIPAddress()
-log.transports.file.resolvePathFn = () => path.join(process.cwd(), 'userData/main.log');
-log.initialize()
 const PORT = 3000
 const MAX_TEXT_NUMBER = 20
 const MAX_FILE_NUMBER = 10
@@ -218,7 +215,7 @@ try {
 	saveUserData(credential, storage_data[credential])
 	res.json({ success: true })
 } catch (error) {
-	log.error('Delete error:', error)
+	console.log('Delete error:', error)
 	res.status(500).send('Error deleting file')
 }
 })
@@ -248,7 +245,7 @@ try {
 	try {
 		fs.unlinkSync(oldFile.systemPath); // 删除旧文件
 	} catch (err) {
-		log.error(`删除文件 ${oldFile.systemPath} 失败:`, err);
+		console.log(`删除文件 ${oldFile.systemPath} 失败:`, err);
 	}
 	storage_data[credential].files.splice(existingFileIndex, 1); // 从列表中移除旧文件
 	}
@@ -275,7 +272,7 @@ try {
 	try {
 		fs.unlinkSync(storage_data[credential].files[removeIndex].systemPath); // 删除文件系统中的文件
 	} catch (err) {
-		log.error(`Failed to delete file ${file.systemPath}:`, err);
+		console.log(`Failed to delete file ${file.systemPath}:`, err);
 	}
 	// });
 
@@ -287,7 +284,7 @@ try {
 	saveUserData(credential, storage_data[credential])
 	res.json({ success: true, ...data })
 } catch (error) {
-	log.error('Upload error:', error)
+	console.log('Upload error:', error)
 	res.status(500).send('Error processing file')
 }
 })
@@ -312,7 +309,7 @@ fs.unlinkSync(file.systemPath)
 	saveUserData(credential, storage_data[credential])
 	res.json({ success: true })
 } catch (error) {
-	log.error('Delete error:', error)
+	console.log('Delete error:', error)
 	res.status(500).send('Error deleting file')
 }
 })
@@ -347,12 +344,12 @@ try {
 	const fileStream = fs.createReadStream(file.systemPath)
 	fileStream.pipe(res)
 } catch (error) {
-	log.error('Download error:', error)
+	console.log('Download error:', error)
 	res.status(500).send('Error downloading file')
 }
 })
 onCopy(app, {isServer: true, url: `${ip}:${PORT}`, CREDENTIAL: '123123', MAX_FILE_SIZE: 50, linux: true})
 app.listen(PORT, () => {
-	log.info(`Server is running at ${PORT}`);
+	console.log(`Server is running at ${PORT}`);
 });
 // }
