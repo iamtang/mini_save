@@ -64,7 +64,7 @@ function encryptFile(filePath) {
   const encrypted = Buffer.concat([cipher.update(fileBuffer), cipher.final()]);
   
   // 保存临时加密文件
-  const encryptedPath = path.join(path.dirname(filePath), path.basename(filePath) + '.enc');
+  const encryptedPath = path.join(hexPath, path.basename(filePath));
   fs.writeFileSync(encryptedPath, encrypted);
 
   return encryptedPath;
