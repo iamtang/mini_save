@@ -35,10 +35,7 @@ async function onCopy(server, config){
 			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE){
 				continue
 			}
-			const res = await ossUpload(oss, filePath)
-			console.log(res.url)
-
-			// const res = await uploadFile(filePath, config)
+			const res = oss ? await ossUpload(oss, filePath) : await uploadFile(filePath, config)
 			socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}))
 			// console.log('===文件===')
 		}else if(currentContent){
@@ -60,8 +57,7 @@ function onMessage(msg, { url, CREDENTIAL, roomID }){
         currentContent = preContent = data.data
         clipboard.writeText(currentContent)
     } else if ((data.type === 'file' || data.type === 'oss') && powerMonitor.getSystemIdleTime() < 300) {
-		console.log(data)
-        downloadFile(data.type === 'file' ? `http://${url}/api/download/${CREDENTIAL}/${data.data}` : data.data).then(async (res) => {
+        downloadFile(data.type === 'file' ? `http://${url}/api/download/${CREDENTIAL}/${data.data}` : data.data, data.type === 'oss').then(async (res) => {
             currentContent = preContent = `file://${res}`
             clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
         })

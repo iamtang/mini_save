@@ -105,7 +105,7 @@ function decryptFile(encryptedBuffer) {
   return decrypted;
 }
 
-async function downloadFile(url){
+async function downloadFile(url, isHex){
     const savePath = path.join(app.getPath('userData'), 'downloads');
     // fs.rmdirSync(savePath);
     rmFolder(savePath)
@@ -137,7 +137,7 @@ async function downloadFile(url){
     const encryptedBuffer = Buffer.from(new Uint8Array(response.data));
     // const decrypted = encryptedBuffer;
     const decrypted = decryptFile(encryptedBuffer);
-    fs.writeFileSync(saveFilePath, decrypted);
+    fs.writeFileSync(saveFilePath, isHex ? decrypted : encryptedBuffer);
 
     return saveFilePath;
 }
