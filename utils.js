@@ -3,6 +3,11 @@ const axios =  require('axios');
 const fs = require('fs');
 const path = require('path');
 const os =  require('os');
+const crypto = require('crypto');
+const FormData = require('form-data');
+
+const key = Buffer.from('7483c8494ebee272085a833dd83a7651e18aa2936529ed3146fe9ac0ea0439e1', 'hex'); // 256-bit 密钥
+const iv = Buffer.from('69a117444dda7e183100876d7558ea37', 'hex');;  // 初始向量
 const hexPath = path.join(app.getPath('userData'), 'hex');
 if (!fs.existsSync(hexPath)) {
   fs.mkdirSync(hexPath, { recursive: true });
@@ -52,6 +57,33 @@ function rmFolder(folderPath) {
     });
 }
 
+// AES 256 CBC 加密文件
+function encryptFile(filePath) {
+  const fileBuffer = fs.readFileSync(filePath);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  const encrypted = Buffer.concat([cipher.update(fileBuffer), cipher.final()]);
+  
+  // 保存临时加密文件
+  const encryptedPath = path.join(path.dirname(filePath), path.basename(filePath) + '.enc');
+  fs.writeFileSync(encryptedPath, encrypted);
+
+  return encryptedPath;
+}
+
+async function uploadFile(filePath, config){
+  const form = new FormData();
+  form.append('file', fs.createReadStream(encryptFile(filePath)));
+  const res = await axios.post(`http://${config.url}/api/upload/${config.CREDENTIAL}`, form, {headers: form.getHeaders() })
+  return res.data
+}
+
+// 解密
+function decryptFile(encryptedBuffer) {
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+  const decrypted = Buffer.concat([decipher.update(encryptedBuffer), decipher.final()]);
+  return decrypted;
+}
+
 async function downloadFile(url){
     const savePath = path.join(app.getPath('userData'), 'downloads');
     // fs.rmdirSync(savePath);
@@ -77,13 +109,21 @@ async function downloadFile(url){
 
     // 文件保存路径
     const saveFilePath = path.join(savePath, fileName);
-    fs.writeFileSync(saveFilePath, Buffer.from(response.data))
-    return saveFilePath
+
+    // ✅ 转为 Uint8Array 确保是纯字节流
+    const encryptedBuffer = Buffer.from(new Uint8Array(response.data));
+    const decrypted = decryptFile(encryptedBuffer);
+    fs.writeFileSync(saveFilePath, decrypted);
+
+    return saveFilePath;
 }
 
 
 module.exports = {
     getIPAddress,
     rmFolder,
-    downloadFile
+    downloadFile,
+    uploadFile,
+    encryptFile,
+    decryptFile
 }
