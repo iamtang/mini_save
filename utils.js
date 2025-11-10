@@ -3,6 +3,10 @@ const axios =  require('axios');
 const fs = require('fs');
 const path = require('path');
 const os =  require('os');
+const hexPath = path.join(app.getPath('userData'), 'hex');
+if (!fs.existsSync(hexPath)) {
+  fs.mkdirSync(hexPath, { recursive: true });
+}
 
 // 获取本机 IP 地址
 function getIPAddress() {
