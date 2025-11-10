@@ -40,21 +40,21 @@ async function decryptFile(inputPath) {
   });
 }
 
-async function uploadFile(filePath){
+async function uploadFile(filePath, config){
 	const form = new FormData();
 	form.append('file', fs.createReadStream(filePath));
-	const res = await axios.post(`http://${url}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
+	const res = await axios.post(`http://${config.url}/api/upload/${config.CREDENTIAL}`, form, {headers: form.getHeaders() })
 	return res.data
 }
-function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 3}){
-    if(!CREDENTIAL) return null
+function onCopy(server, config){
+    if(!config.CREDENTIAL) return null
 	// 服务端
-	if(isServer){
-		initServerWss(server, {url, CREDENTIAL})
+	if(config.isServer){
+		initServerWss(server, config)
 	}
 
 	// 客户端
-	const socket = initClientWss({url, CREDENTIAL})
+	const socket = initClientWss(config)
 	currentContent = clipboard.read('public.file-url') || clipboard.readText();
 	setInterval(async () => {
 		currentContent = clipboard.read('public.file-url') || clipboard.readText();
@@ -62,16 +62,16 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 3}){
 		if(clipboard.read('public.file-url')){
 			const filePath = decodeURIComponent(currentContent.replace('file://',''));
 			const stats = fs.statSync(filePath);
-			if(stats.size > 1024 * 1024 * MAX_FILE_SIZE){
+			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE){
 				return null
 			}
 			const hexPath = await encryptFile(filePath)
-			const res = await uploadFile(hexPath)
+			const res = await uploadFile(hexPath, config)
 			socket.send(JSON.stringify({type: 'file', data: res.id}))
 			// console.log('===文件===')
 		}else if(currentContent){
 			let currentContent = clipboard.readText();
-			await axios.post(`http://${url}/api/text/${CREDENTIAL}`, {text: currentContent})
+			await axios.post(`http://${config.url}/api/text/${config.CREDENTIAL}`, {text: currentContent})
 			socket.send(JSON.stringify({type: 'text', data: currentContent}))
 			// log.info('===文本===')
 		}
