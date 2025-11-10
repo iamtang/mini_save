@@ -14,10 +14,14 @@ if (!fs.existsSync(hexPath)) {
   fs.mkdirSync(hexPath, { recursive: true });
 }
 
-async function ossInit(){
+async function ossInit(config){
   try {
-      const ossConfig = require('./.oss.json')
-      const oss = new OSS(ossConfig);
+      const oss = new OSS({
+        region: config.REGION,
+        accessKeyId: config.ACCESSKEID,
+        accessKeySecret: config.ACCESSKEYSECRET,
+        bucket: config.BUCKET
+      });
       await oss.list({ "max-keys": 5 });
       console.log('oss 服务正常')
       return oss

@@ -114,6 +114,22 @@
                 <input type="text" id="CREDENTIAL" maxlength="6" placeholder="请输入口令">
             </div>
             <div class="form-group">
+                <label for="REGION">region</label>
+                <input type="text" id="REGION" placeholder="请输入region">
+            </div>
+            <div class="form-group">
+                <label for="ACCESSKEID">accessKeyId</label>
+                <input type="text" id="ACCESSKEID" placeholder="请输入accessKeyId">
+            </div>
+            <div class="form-group">
+                <label for="ACCESSKEYSECRET">accessKeySecret</label>
+                <input type="text" id="ACCESSKEYSECRET" placeholder="请输入accessKeySecret">
+            </div>
+            <div class="form-group">
+                <label for="BUCKET">bucket</label>
+                <input type="text" id="BUCKET" placeholder="请输入bucket">
+            </div>
+            <div class="form-group">
                 <label for="MAX_TEXT_NUMBER">文本最大条数</label>
                 <input type="number" id="MAX_TEXT_NUMBER" value="20" placeholder="默认：20">
             </div>
@@ -154,6 +170,10 @@
             document.getElementById('SERVER_ADDRESS').value = settings.SERVER_ADDRESS || '';
             document.getElementById('PORT').value = settings.PORT || 3000;
             document.getElementById('CREDENTIAL').value = settings.CREDENTIAL || '';
+            document.getElementById('REGION').value = settings.REGION || '';
+            document.getElementById('ACCESSKEID').value = settings.ACCESSKEID || '';
+            document.getElementById('ACCESSKEYSECRET').value = settings.ACCESSKEYSECRET || '';
+            document.getElementById('BUCKET').value = settings.BUCKET || '';
             document.getElementById('MAX_TEXT_NUMBER').value = settings.MAX_TEXT_NUMBER || '';
             document.getElementById('MAX_FILE_NUMBER').value = settings.MAX_FILE_NUMBER || '';
             document.getElementById('MAX_FILE_SIZE').value = settings.MAX_FILE_SIZE || '';
@@ -164,6 +184,10 @@
                 SERVER_ADDRESS: document.getElementById('SERVER_ADDRESS').value,
                 PORT: document.getElementById('PORT').value,
                 CREDENTIAL: document.getElementById('CREDENTIAL').value,
+                REGION: document.getElementById('REGION').value,
+                ACCESSKEID: document.getElementById('ACCESSKEID').value,
+                ACCESSKEYSECRET: document.getElementById('ACCESSKEYSECRET').value,
+                BUCKET: document.getElementById('BUCKET').value,
                 MAX_TEXT_NUMBER: document.getElementById('MAX_TEXT_NUMBER').value,
                 MAX_FILE_NUMBER: document.getElementById('MAX_FILE_NUMBER').value,
                 MAX_FILE_SIZE: document.getElementById('MAX_FILE_SIZE').value,

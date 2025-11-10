@@ -21,7 +21,7 @@ async function onCopy(server, config){
 	if(config.isServer){
 		initServerWss(server, config)
 	}
-	const oss = await ossInit()
+	const oss = await ossInit(config)
 	// 客户端
 	const socket = initClientWss(config)
 	currentContent = clipboard.read('public.file-url') || clipboard.readText();
