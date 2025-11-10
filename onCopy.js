@@ -36,8 +36,10 @@ async function onCopy(server, config){
 				continue
 			}
 			const res = await ossUpload(oss, filePath)
+			console.log(res.url)
+
 			// const res = await uploadFile(filePath, config)
-			socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id}))
+			socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}))
 			// console.log('===文件===')
 		}else if(currentContent){
 			let currentContent = clipboard.readText();
