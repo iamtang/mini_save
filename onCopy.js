@@ -4,7 +4,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
-const { downloadFile, uploadFile } = require('./utils.js')
+const { downloadFile, uploadFile, ossInit, ossUpload  } = require('./utils.js')
 const log = require('electron-log/main');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
@@ -16,13 +16,13 @@ global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
 
 
 
-function onCopy(server, config){
+async function onCopy(server, config){
     if(!config.CREDENTIAL) return null
 	// 服务端
 	if(config.isServer){
 		initServerWss(server, config)
 	}
-
+	const oss = await ossInit()
 	// 客户端
 	const socket = initClientWss(config)
 	currentContent = clipboard.read('public.file-url') || clipboard.readText();
@@ -35,8 +35,10 @@ function onCopy(server, config){
 			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE){
 				return null
 			}
-			const res = await uploadFile(filePath, config)
-			socket.send(JSON.stringify({type: 'file', data: res.id}))
+			console.log(oss)
+			const res = await ossUpload(oss, filePath)
+			// const res = await uploadFile(filePath, config)
+			socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id}))
 			// console.log('===文件===')
 		}else if(currentContent){
 			let currentContent = clipboard.readText();
@@ -56,8 +58,8 @@ function onMessage(msg, { url, CREDENTIAL, roomID }){
     if (data.type === 'text') {
         currentContent = preContent = data.data
         clipboard.writeText(currentContent)
-    } else if (data.type === 'file' && powerMonitor.getSystemIdleTime() < 300) {
-        downloadFile(`http://${url}/api/download/${CREDENTIAL}/${data.data}`).then(async (res) => {
+    } else if ((data.type === 'file' || data.type === 'oss') && powerMonitor.getSystemIdleTime() < 300) {
+        downloadFile(data.type === 'file' ? `http://${url}/api/download/${CREDENTIAL}/${data.data}` : data.data).then(async (res) => {
             currentContent = preContent = `file://${res}`
             clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
         })

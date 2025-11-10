@@ -1,5 +1,6 @@
 const { app } =  require('electron');
 const axios =  require('axios');
+const OSS =  require('ali-oss');
 const fs = require('fs');
 const path = require('path');
 const os =  require('os');
@@ -11,6 +12,25 @@ const iv = Buffer.from('69a117444dda7e183100876d7558ea37', 'hex');;  // 初始�
 const hexPath = path.join(app.getPath('userData'), 'hex');
 if (!fs.existsSync(hexPath)) {
   fs.mkdirSync(hexPath, { recursive: true });
+}
+
+async function ossInit(){
+  try {
+      const ossConfig = require('./.oss.json')
+      const oss = new OSS(ossConfig);
+      await oss.list({ "max-keys": 5 });
+      console.log('oss 服务正常')
+      return oss
+  } catch (error) {
+      return null
+  }
+}
+
+async function ossUpload(oss, filePath){
+  const filename = path.basename(filePath)
+  const hexFile = await encryptFile(filePath)
+  const result = await oss.put(`test/${filename}`, hexFile);
+  return {url: result.url}
 }
 
 // 获取本机 IP 地址
@@ -113,8 +133,8 @@ async function downloadFile(url){
 
     // ✅ 转为 Uint8Array 确保是纯字节流
     const encryptedBuffer = Buffer.from(new Uint8Array(response.data));
-    const decrypted = encryptedBuffer;
-    // const decrypted = decryptFile(encryptedBuffer);
+    // const decrypted = encryptedBuffer;
+    const decrypted = decryptFile(encryptedBuffer);
     fs.writeFileSync(saveFilePath, decrypted);
 
     return saveFilePath;
@@ -127,5 +147,7 @@ module.exports = {
     downloadFile,
     uploadFile,
     encryptFile,
-    decryptFile
+    decryptFile,
+    ossInit,
+    ossUpload
 }
