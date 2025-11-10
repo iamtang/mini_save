@@ -72,7 +72,8 @@ function encryptFile(filePath) {
 
 async function uploadFile(filePath, config){
   const form = new FormData();
-  form.append('file', fs.createReadStream(encryptFile(filePath)));
+  // form.append('file', fs.createReadStream(encryptFile(filePath)));
+  form.append('file', fs.createReadStream(filePath));
   const res = await axios.post(`http://${config.url}/api/upload/${config.CREDENTIAL}`, form, {headers: form.getHeaders() })
   return res.data
 }
@@ -112,7 +113,8 @@ async function downloadFile(url){
 
     // ✅ 转为 Uint8Array 确保是纯字节流
     const encryptedBuffer = Buffer.from(new Uint8Array(response.data));
-    const decrypted = decryptFile(encryptedBuffer);
+    const decrypted = encryptedBuffer;
+    // const decrypted = decryptFile(encryptedBuffer);
     fs.writeFileSync(saveFilePath, decrypted);
 
     return saveFilePath;
