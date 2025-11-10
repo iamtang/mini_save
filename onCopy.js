@@ -4,15 +4,48 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
+const crypto = require('crypto');
 const { downloadFile } = require('./utils.js')
 const log = require('electron-log/main');
-
+const hexPath = path.join(app.getPath('userData'), 'hex');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
 let preContent = null;
 let currentContent = null;
 // 房间管理对象
 global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
+const key = Buffer.from('7483c8494ebee272085a833dd83a7651e18aa2936529ed3146fe9ac0ea0439e1', 'hex'); // 256-bit 密钥
+const iv = Buffer.from('69a117444dda7e183100876d7558ea37', 'hex');;  // 初始向量
+const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+
+// AES 256 CBC 加密文件
+async function encryptFile(inputPath) {
+  
+  const outputPath = path.join(hexPath, path.basename(inputPath))
+  return new Promise((resolve, reject) => {
+    const input = fs.createReadStream(inputPath);
+    const output = fs.createWriteStream(outputPath);
+    input.pipe(cipher).pipe(output);
+    output.on('finish', () => resolve(outputPath));
+    output.on('error', reject);
+  });
+}
+
+// 解密
+async function decryptFile(inputPath) {
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(inputPath).pipe(decipher).pipe(fs.createWriteStream(inputPath));
+    fs.createReadStream(inputPath).on('end', resolve);
+    fs.createReadStream(inputPath).on('error', reject);
+  });
+}
+
+async function uploadFile(filePath){
+	const form = new FormData();
+	form.append('file', fs.createReadStream(filePath));
+	const res = await axios.post(`http://${url}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
+	return res.data
+}
 function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 3}){
     if(!CREDENTIAL) return null
 	// 服务端
@@ -32,10 +65,9 @@ function onCopy(server, {isServer, url, CREDENTIAL, MAX_FILE_SIZE = 3}){
 			if(stats.size > 1024 * 1024 * MAX_FILE_SIZE){
 				return null
 			}
-			const form = new FormData();
-			form.append('file', fs.createReadStream(decodeURIComponent(currentContent.replace('file://',''))));
-			const res = await axios.post(`http://${url}/api/upload/${CREDENTIAL}`, form, {headers: form.getHeaders() })
-			socket.send(JSON.stringify({type: 'file', data: res.data.id}))
+			const hexPath = await encryptFile(filePath)
+			const res = await uploadFile(hexPath)
+			socket.send(JSON.stringify({type: 'file', data: res.id}))
 			// console.log('===文件===')
 		}else if(currentContent){
 			let currentContent = clipboard.readText();
