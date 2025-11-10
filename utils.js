@@ -126,6 +126,8 @@ async function downloadFile(url){
         console.error('解码文件名时发生错误:', err);
         fileName = 'default-file';  // 出现错误时使用默认文件名
       }
+    }else{
+      fileName = decodeURIComponent(path.basename(new URL(url).pathname));
     }
 
     // 文件保存路径
@@ -140,6 +142,9 @@ async function downloadFile(url){
     return saveFilePath;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 module.exports = {
     getIPAddress,
@@ -149,5 +154,6 @@ module.exports = {
     encryptFile,
     decryptFile,
     ossInit,
-    ossUpload
+    ossUpload,
+    sleep
 }

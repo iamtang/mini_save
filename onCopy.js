@@ -1,10 +1,9 @@
 const { clipboard, app, powerMonitor } = require('electron');
 const axios = require('axios');
-
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
-const { downloadFile, uploadFile, ossInit, ossUpload  } = require('./utils.js')
+const { downloadFile, uploadFile, ossInit, ossUpload, sleep } = require('./utils.js')
 const log = require('electron-log/main');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
@@ -26,16 +25,16 @@ async function onCopy(server, config){
 	// 客户端
 	const socket = initClientWss(config)
 	currentContent = clipboard.read('public.file-url') || clipboard.readText();
-	setInterval(async () => {
+	while(true){
+		await sleep(1000)
 		currentContent = clipboard.read('public.file-url') || clipboard.readText();
-		if(currentContent === preContent) return null;
+		if(currentContent === preContent) continue;
 		if(clipboard.read('public.file-url')){
 			const filePath = decodeURIComponent(currentContent.replace('file://',''));
 			const stats = fs.statSync(filePath);
 			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE){
-				return null
+				continue
 			}
-			console.log(oss)
 			const res = await ossUpload(oss, filePath)
 			// const res = await uploadFile(filePath, config)
 			socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id}))
@@ -47,7 +46,7 @@ async function onCopy(server, config){
 			// log.info('===文本===')
 		}
 		preContent = currentContent
-	}, 1000);
+	};
 }
 
 function onMessage(msg, { url, CREDENTIAL, roomID }){
@@ -59,6 +58,7 @@ function onMessage(msg, { url, CREDENTIAL, roomID }){
         currentContent = preContent = data.data
         clipboard.writeText(currentContent)
     } else if ((data.type === 'file' || data.type === 'oss') && powerMonitor.getSystemIdleTime() < 300) {
+		console.log(data)
         downloadFile(data.type === 'file' ? `http://${url}/api/download/${CREDENTIAL}/${data.data}` : data.data).then(async (res) => {
             currentContent = preContent = `file://${res}`
             clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
