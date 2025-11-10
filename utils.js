@@ -134,10 +134,14 @@ async function downloadFile(url, isHex){
     const saveFilePath = path.join(savePath, fileName);
 
     // ✅ 转为 Uint8Array 确保是纯字节流
-    const encryptedBuffer = Buffer.from(new Uint8Array(response.data));
-    // const decrypted = encryptedBuffer;
-    const decrypted = decryptFile(encryptedBuffer);
-    fs.writeFileSync(saveFilePath, isHex ? decrypted : encryptedBuffer);
+    if(isHex){
+      const encryptedBuffer = Buffer.from(new Uint8Array(response.data));
+      // const decrypted = encryptedBuffer;
+      const decrypted = decryptFile(encryptedBuffer);
+      fs.writeFileSync(saveFilePath, isHex ? decrypted : encryptedBuffer);
+    }else{
+      fs.writeFileSync(saveFilePath, Buffer.from(response.data))
+    }
 
     return saveFilePath;
 }
