@@ -307,7 +307,7 @@ app.put("/api/star/file/:credential/:id", async (req, res) => {
 
 app.get("/api/upload/oss/sts", async (req, res) => {
     const { _oss } = req.headers;
-	console.log(_oss, ossConf, '============')
+	console.log(req.headers, '============')
     if(!_oss || !ossConf){
       return res.status(404).send('not found')
     }
