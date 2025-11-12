@@ -7,7 +7,7 @@ const MAX_FILE_NUMBER = 10;
 const userDataPath = path.join(process.cwd(), "userData");
 
 // 房间管理对象
-const rooms = new Map(); // 使用 Map 存储房间和客户端连接
+global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
 
 function initServerWss(server) {
     const wss = new WebSocket.Server({ noServer: true });
