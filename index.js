@@ -8,13 +8,13 @@ const pkg = require('./package.json')
 const { getIPAddress } = require('./utils.js')
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
-
+const userDataPath = app.getPath('userData');
 let server = null
 let ip = getIPAddress()
 
 // 启动服务器
 function startServer(config) {
-  server = Server(app, config)
+  server = Server(config)
 }
 
 // 停止服务器
@@ -27,7 +27,6 @@ function stopServer() {
 }
 
 function initConfig(){
-    const userDataPath = app.getPath('userData'); // 获取 userData 路径
     const targetConfigPath = path.join(userDataPath, 'config.json');
     const sourceConfigPath = path.join(__dirname, 'config.json');
     if (!fs.existsSync(targetConfigPath)) {
@@ -43,6 +42,7 @@ app.whenReady().then(() => {
   const config = initConfig()
   config.isServer = !config.SERVER_ADDRESS
   config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `${ip}`
+  config.userDataPath = userDataPath
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
