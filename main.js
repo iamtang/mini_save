@@ -33,9 +33,9 @@ try{
 		accessKeyId: ossConf.accessKeyId,
 		accessKeySecret: ossConf.accessKeySecret,
 	});
+	console.log(ossConf)
 }catch(e){
-console.log(e)
-
+	console.log(e)
 }
 function initServerWss(server) {
     const wss = new WebSocket.Server({ noServer: true });
