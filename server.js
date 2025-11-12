@@ -6,12 +6,6 @@ const WebSocket = require("ws");
 const { STS } = require("ali-oss");
 const log = require("electron-log/main");
 // const cors = require('cors')
-try {
- 
-} catch (error) {
-  
-}
-
 
 let credentials = null;
 let sts = null;
@@ -24,7 +18,8 @@ module.exports = ({
 }) => {
     const DATA_DIR = path.join(userDataPath, "data");
     const UPLOADS_DIR = path.join(userDataPath, "uploads");
-    log.transports.file.resolvePathFn = () => path.join(userDataPath, "main.log");
+    log.transports.file.resolvePathFn = () =>
+        path.join(userDataPath, "main.log");
     log.initialize();
     try {
         ossConf = require("./.oss.json");
@@ -295,7 +290,7 @@ module.exports = ({
             accessKeySecret: result.credentials.AccessKeySecret,
             stsToken: result.credentials.SecurityToken,
             expiration: result.credentials.Expiration,
-            secure: !!ossConf.secure
+            secure: !!ossConf.secure,
         };
         res.json(credentials);
     });
@@ -309,6 +304,25 @@ module.exports = ({
             if (!storage_data[credential]) {
                 storage_data[credential] = loadUserData(credential);
             }
+            
+            // 检查并删除多余文件
+            const existingFileIndex = storage_data[credential].files.findIndex(
+                (f) => f.filename === filename
+            );
+
+            // 如果文件已经存在，删除旧的文件
+            if (existingFileIndex !== -1) {
+                const oldFile =
+                    storage_data[credential].files[existingFileIndex];
+                star = oldFile.star;
+                try {
+                    oldFile.systemPath && fs.unlinkSync(oldFile.systemPath); // 删除旧文件
+                } catch (err) {
+                    log.error(`删除文件 ${oldFile.systemPath} 失败:`, err);
+                }
+                storage_data[credential].files.splice(existingFileIndex, 1); // 从列表中移除旧文件
+            }
+
             const now = new Date();
             const data = {
                 star,
@@ -320,23 +334,7 @@ module.exports = ({
                 type: "oss",
             };
             storage_data[credential].files.unshift(data);
-            // 检查并删除多余文件
-            const existingFileIndex = storage_data[
-                    credential
-                ].files.findIndex((f) => f.filename === filename);
-
-                // 如果文件已经存在，删除旧的文件
-                if (existingFileIndex !== -1) {
-                    const oldFile =
-                        storage_data[credential].files[existingFileIndex];
-                    star = oldFile.star;
-                    try {
-                        oldFile.systemPath && fs.unlinkSync(oldFile.systemPath); // 删除旧文件
-                    } catch (err) {
-                        log.error(`删除文件 ${oldFile.systemPath} 失败:`, err);
-                    }
-                    storage_data[credential].files.splice(existingFileIndex, 1); // 从列表中移除旧文件
-                }
+            
 
             while (
                 storage_data[credential].files.filter((item) => !item.star)
