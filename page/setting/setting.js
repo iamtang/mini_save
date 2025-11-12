@@ -9,7 +9,7 @@ function createSettingWindow() {
   
   settingWindow = new BrowserWindow({
     width: 360,
-    height: 340,
+    height: 300,
     resizable: false,
     devTools: false, // 禁用开发者工具
     // transparent: true,
