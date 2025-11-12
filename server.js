@@ -281,7 +281,7 @@ module.exports = ({
 
     app.get("/api/upload/oss/sts", async (req, res) => {
         const _oss = req.headers["x-oss"];
-        if (!_oss || !ossConf) {
+        if (!_oss || !ossConf || !sts) {
             return res.status(404).send("not found");
         }
         if (credentials && new Date() < new Date(credentials.expiration)) {
