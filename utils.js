@@ -18,7 +18,7 @@ if (!fs.existsSync(hexPath)) {
 async function getSts(config){
   return await axios.get(`${config.url}/api/upload/oss/sts`, {
     headers: {
-      _oss: 1
+      'x-oss': 1
     }
   }).then(res => res.data)
 }

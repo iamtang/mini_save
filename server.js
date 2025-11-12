@@ -245,7 +245,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
   })
 
   app.get('/api/upload/oss/sts', async(req,res) => {
-    const {_oss} = req.headers
+    const _oss = req.headers['x-oss']
     if(!_oss || !ossConf){
       return res.status(404).send('not found')
     }
