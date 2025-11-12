@@ -295,6 +295,7 @@ module.exports = ({
             accessKeySecret: result.credentials.AccessKeySecret,
             stsToken: result.credentials.SecurityToken,
             expiration: result.credentials.Expiration,
+            secure: !!ossConf.secure
         };
         res.json(credentials);
     });
