@@ -434,7 +434,7 @@ async function getAesKey() {
     hexStringToUint8Array(keyHex),
     { name: 'AES-CBC' },
     false,
-    ['encrypt']
+    ["encrypt", "decrypt"]
   );
 }
 

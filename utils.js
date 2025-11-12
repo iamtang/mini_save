@@ -25,7 +25,6 @@ async function getSts(config){
 async function ossInit(config){
   try {
     const stsConfig = await getSts(config)
-    console.log(stsConfig)
     const oss = new OSS({
       ...stsConfig,
       refreshSTSToken: async () => {
