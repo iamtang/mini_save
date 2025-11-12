@@ -42,7 +42,7 @@ function initConfig(){
 app.whenReady().then(() => {
   const config = initConfig()
   config.isServer = !config.SERVER_ADDRESS
-  config.url = !config.isServer ? `${config.SERVER_ADDRESS}:${config.PORT}` : `${ip}:${config.PORT}`
+  config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `${ip}`
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
@@ -50,7 +50,7 @@ app.whenReady().then(() => {
   const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
   // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
   const contextMenu = Menu.buildFromTemplate([
-    { label: '打开网址', click: () => shell.openExternal(`http://${config.url}`) },
+    { label: '打开网址', click: () => shell.openExternal(config.url) },
     { label: '管理', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
     { label: `设置`, click: () => {
       const createSettingWindow = require('./page/setting/setting.js'); 

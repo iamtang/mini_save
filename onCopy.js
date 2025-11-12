@@ -53,7 +53,7 @@ function onMessage(msg, { url, CREDENTIAL, roomID }){
         currentContent = preContent = data.data
         clipboard.writeText(currentContent)
     } else if ((data.type === 'file' || data.type === 'oss') && powerMonitor.getSystemIdleTime() < 300) {
-        downloadFile(data.type === 'file' ? `http://${url}/api/download/${CREDENTIAL}/${data.data}` : data.data, data.type === 'oss').then(async (res) => {
+        downloadFile(data.type === 'file' ? `${url}/api/download/${CREDENTIAL}/${data.data}` : data.data, data.type === 'oss').then(async (res) => {
             currentContent = preContent = `file://${res}`
             clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
         })
@@ -113,7 +113,8 @@ function reConnentClientWss({ url, CREDENTIAL }) {
 }
 
 function initClientWss({ url, CREDENTIAL }) {
-	const socket = new WebSocket(`ws://${url}/${CREDENTIAL}`);
+	const host = url.replace('https://', 'wss://').replace('http://', 'ws://')
+	const socket = new WebSocket(`${host}/${CREDENTIAL}`);
 	socket.on('open', () => {
 		log.info('WebSocket 连接成功');
 		socket.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));

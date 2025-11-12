@@ -16,7 +16,7 @@ if (!fs.existsSync(hexPath)) {
 }
 
 async function getSts(config){
-  return await axios.get(`http://${config.url}/api/upload/oss/sts`, {
+  return await axios.get(`${config.url}/api/upload/oss/sts`, {
     headers: {
       _oss: 1
     }
@@ -55,7 +55,7 @@ async function ossUpload(oss, filePath, config){
   const hexFile = await encryptFile(filePath)
   const size = fs.statSync(filePath).size
   const result = await oss.put(`test/${filename}`, hexFile);
-  await axios.post(`http://${config.url}/api/upload/oss/${config.CREDENTIAL}`, {
+  await axios.post(`${config.url}/api/upload/oss/${config.CREDENTIAL}`, {
     size, 
     filename, 
     filePath: result.url
@@ -125,7 +125,7 @@ async function uploadFile(filePath, config){
   const form = new FormData();
   // form.append('file', fs.createReadStream(encryptFile(filePath)));
   form.append('file', fs.createReadStream(filePath));
-  const res = await axios.post(`http://${config.url}/api/upload/${config.CREDENTIAL}`, form, {headers: form.getHeaders() })
+  const res = await axios.post(`${config.url}/api/upload/${config.CREDENTIAL}`, form, {headers: form.getHeaders() })
   return res.data
 }
 
@@ -178,7 +178,7 @@ async function downloadFile(url, isHex){
 }
 
 async function textUpload(data, config) {
-  await axios.post(`http://${config.url}/api/text/${config.CREDENTIAL}`, {text: data})
+  await axios.post(`${config.url}/api/text/${config.CREDENTIAL}`, {text: data})
   
 }
 
