@@ -53,14 +53,15 @@ async function ossUpload(oss, filePath, config){
   const filename = path.basename(filePath)
   const hexFile = await encryptFile(filePath)
   const size = fs.statSync(filePath).size
-  const result = await oss.put(`test/${filename}`, hexFile);
+  const result = await oss.multipartUpload(`test/${filename}`, hexFile);
+  const url = result.url || result.res.requestUrls[0].split('?')[0]
   await axios.post(`${config.url}/api/upload/oss/${config.CREDENTIAL}`, {
     size, 
     filename, 
-    filePath: result.url
+    filePath: url
   })
   // console.log(aa, result.url)
-  return {url: result.url}
+  return {url}
 }
 
 // 获取本机 IP 地址

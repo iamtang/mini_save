@@ -182,7 +182,19 @@ function App() {
     const ossConfig = await res.json()
     const oss = new OSS(ossConfig)
     const _file = await encryptFile(file)
-    const fileResult = await oss.put(file.name, _file)
+    const fileResult = await oss.multipartUpload(file.name, _file, {
+      progress(p, checkpoint) {
+        setContents(prev => ({
+          ...prev,
+          files: prev.files.map(f => 
+            f.id === tempFileId 
+              ? { ...f, progress: p * 100, speed: `${(p * 100).toFixed(2)}%` }
+              : f
+          )
+        }))
+      },
+    })
+    const url = fileResult.url || fileResult.res.requestUrls[0].split('?')[0]
     const res2 = await fetch(`${API_URL}/api/upload/oss/${credential}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,7 +202,7 @@ function App() {
           from: 'h5', 
           size: file.size, 
           filename: fileResult.name, 
-          filePath: fileResult.url
+          filePath: url
         })
     })
     fetchContents()
@@ -254,7 +266,6 @@ function App() {
             const speed = (loaded / timeElapsed) * 1000
             const formattedSpeed = formatSpeed(speed)
             const progress = Math.round((event.loaded / event.total) * 100)
-            
             setContents(prev => ({
               ...prev,
               files: prev.files.map(f => 

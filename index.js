@@ -4,13 +4,10 @@ const path =  require('path');
 const fs =  require('fs');
 const onCopy =require('./onCopy.js')
 const Server =  require('./server.js');
-const pkg = require('./package.json')
-const { getIPAddress } = require('./utils.js')
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
 const userDataPath = app.getPath('userData');
 let server = null
-let ip = getIPAddress()
 
 // 启动服务器
 function startServer(config) {
@@ -41,7 +38,7 @@ function initConfig(){
 app.whenReady().then(() => {
   const config = initConfig()
   config.isServer = !config.SERVER_ADDRESS
-  config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `${ip}`
+  config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `http://localhost:3000`
   config.userDataPath = userDataPath
   // 启动服务器
   config.isServer && startServer(config);

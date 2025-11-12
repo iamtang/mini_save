@@ -18,7 +18,7 @@ let sts = null;
 let ossConf = null;
 module.exports = ({
     userDataPath,
-    PORT,
+    PORT = 3000,
     MAX_TEXT_NUMBER = 20,
     MAX_FILE_NUMBER = 10,
 }) => {
@@ -349,11 +349,6 @@ module.exports = ({
             }
 
             saveUserData(credential, storage_data[credential]);
-            console.log(
-                credential,
-                JSON.stringify({ type: "oss", data: filePath }),
-                from
-            );
             broadcast(
                 credential,
                 JSON.stringify({ type: "oss", data: filePath }),
