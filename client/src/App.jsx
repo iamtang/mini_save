@@ -177,7 +177,7 @@ function App() {
 
     const res = await fetch(`${API_URL}/api/upload/oss/sts`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', _oss: 1 },
+        headers: { 'Content-Type': 'application/json', 'x-oss': 1 },
     })
     const ossConfig = await res.json()
     const oss = new OSS(ossConfig)
