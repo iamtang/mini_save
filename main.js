@@ -1,9 +1,9 @@
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 const path = require("path");
-// const cors = require('cors')
+const {STS} =  require('ali-oss');
 const { getIPAddress } = require("./utils.js");
 let ip = getIPAddress();
 const PORT = 3000;
@@ -13,7 +13,6 @@ const MAX_FILE_NUMBER = 10;
 const userDataPath = path.join(process.cwd(), "userData");
 const DATA_DIR = path.join(userDataPath, "data");
 const UPLOADS_DIR = path.join(userDataPath, "uploads");
-
 const app = express();
 // app.use(cors())
 app.use(express.json());
@@ -21,55 +20,64 @@ app.use(express.static(path.join(__dirname, "./dist/")));
 
 // 存储数据的对象
 let storage_data = {};
+
+let sts = null
+let ossConf = null
+let credentials = null
+
 // 房间管理对象
 const rooms = new Map(); // 使用 Map 存储房间和客户端连接
+try{
+	ossConf =  require('./.oss.json');
+	sts = new STS({
+		accessKeyId: ossConf.accessKeyId,
+		accessKeySecret: ossConf.accessKeySecret,
+	});
+}catch(e){
+console.log(e)
 
-function onCopy(server){
-	initServerWss(server)
 }
-
-
 function initServerWss(server) {
-	const wss = new WebSocket.Server({ noServer: true });
-	// 处理 WebSocket 连接
-	wss.on('connection', (ws, req) => {
-		const roomID = req.url.slice(1); // 获取路径部分去掉 "/"
-		if (!rooms.has(roomID)) {
-			rooms.set(roomID, new Set()); // 如果房间不存在，创建房间
-		}
-		// 将客户端加入房间
-		rooms.get(roomID).add(ws);
-		console.log('客户端连接成功', roomID);
-		// 监听客户端发送的消息
-		ws.on('message', (msg) => {
-			// 同步给同口令的设备
-			for (const client of rooms.get(roomID)) {
-				if (client !== ws && client.readyState === WebSocket.OPEN) {
-					client.send(msg);
-				}
-			}
-		});
-		ws.on('close', () => {
-			rooms.get(roomID).delete(ws);
-		})
-	});
+    const wss = new WebSocket.Server({ noServer: true });
+    // 处理 WebSocket 连接
+    wss.on("connection", (ws, req) => {
+        const roomID = req.url.slice(1); // 获取路径部分去掉 "/"
+        if (!rooms.has(roomID)) {
+            rooms.set(roomID, new Set()); // 如果房间不存在，创建房间
+        }
+        // 将客户端加入房间
+        rooms.get(roomID).add(ws);
+        console.log("客户端连接成功", roomID);
+        // 监听客户端发送的消息
+        ws.on("message", (msg) => {
+            // 同步给同口令的设备
+            for (const client of rooms.get(roomID)) {
+                if (client !== ws && client.readyState === WebSocket.OPEN) {
+                    client.send(msg);
+                }
+            }
+        });
+        ws.on("close", () => {
+            rooms.get(roomID).delete(ws);
+        });
+    });
 
-	// 在 HTTP 服务器上升级到 WebSocket
-	server.on('upgrade', (request, socket, head) => {
-		wss.handleUpgrade(request, socket, head, (ws) => {
-			wss.emit('connection', ws, request);
-		});
-	});
+    // 在 HTTP 服务器上升级到 WebSocket
+    server.on("upgrade", (request, socket, head) => {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+            wss.emit("connection", ws, request);
+        });
+    });
 }
 
-function broadcast(credential, msg, from){
-	if(rooms.get(credential) && from === 'h5'){
-		for (const client of rooms.get(credential)) {
-			if (client.readyState === WebSocket.OPEN) {
-				client.send(msg);
-			}
-		}
-	}
+function broadcast(credential, msg, from) {
+    if (rooms.get(credential) && from === "h5") {
+        for (const client of rooms.get(credential)) {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(msg);
+            }
+        }
+    }
 }
 
 // 确保用户目录存在
@@ -220,8 +228,11 @@ app.post("/api/text/:credential", async (req, res) => {
 
     saveUserData(credential, userData);
     storage_data[credential] = userData;
-	broadcast(credential, JSON.stringify({type: 'text', data: data.content}), from)
-	
+    broadcast(
+        credential,
+        JSON.stringify({ type: "text", data: data.content }),
+        from
+    );
     res.json({ success: true, ...data });
 });
 
@@ -289,8 +300,88 @@ app.put("/api/star/file/:credential/:id", async (req, res) => {
         saveUserData(credential, storage_data[credential]);
         res.json({ success: true });
     } catch (error) {
-        console.log("Delete error:", error);
+        log.error("Delete error:", error);
         res.status(500).send("Error deleting file");
+    }
+});
+
+app.get("/api/upload/oss/sts", async (req, res) => {
+    const { _oss } = req.headers;
+    if(!_oss || !ossConf){
+      return res.status(404).send('not found')
+    }
+    if (credentials && new Date() < new Date(credentials.expiration)) {
+        return res.json(credentials);
+    }
+    const result = await sts.assumeRole(ossConf.roleArn, null, 3600);
+    credentials = {
+        region: ossConf.region,
+        bucket: ossConf.bucket,
+        accessKeyId: result.credentials.AccessKeyId,
+        accessKeySecret: result.credentials.AccessKeySecret,
+        stsToken: result.credentials.SecurityToken,
+        expiration: result.credentials.Expiration,
+    };
+    res.json(credentials);
+});
+
+app.post("/api/upload/oss/:credential", async (req, res) => {
+    const { credential } = req.params;
+    const { from, size, filename, filePath } = req.body;
+    let star = 0;
+
+    try {
+        if (!storage_data[credential]) {
+            storage_data[credential] = loadUserData(credential);
+        }
+        const now = new Date();
+        const data = {
+            star,
+            id: +now,
+            filename,
+            filePath,
+            timestamp: now.toISOString(),
+            size: size || 0, // 确保有默认值
+            type: "oss",
+        };
+        storage_data[credential].files.unshift(data);
+        // 检查并删除多余文件
+        while (
+            storage_data[credential].files.filter((item) => !item.star).length >
+            MAX_FILE_NUMBER
+        ) {
+            // 删除多余的文件记录和文件系统中的实际文件
+            const removeIndex = storage_data[credential].files.findLastIndex(
+                (item) => item.star !== 1
+            );
+            // userData.texts.splice(removeIndex, 1);
+            // const extraFiles = storage_data[credential].files.slice(MAX_FILE_NUMBER);
+            // extraFiles.forEach(file => {
+            try {
+                storage_data[credential].files[removeIndex].systemPath &&
+                    fs.unlinkSync(
+                        storage_data[credential].files[removeIndex].systemPath
+                    ); // 删除文件系统中的文件
+            } catch (err) {
+                log.error(`Failed to delete file ${file.systemPath}:`, err);
+            }
+            // });
+
+            // 保留最新的 MAX_FILE_NUMBER 条文件记录
+            storage_data[credential].files.splice(removeIndex, 1);
+            // storage_data[credential].files = storage_data[credential].files.slice(0, MAX_FILE_NUMBER);
+        }
+
+        saveUserData(credential, storage_data[credential]);
+        broadcast(
+            credential,
+            JSON.stringify({ type: "oss", data: filePath }),
+            from
+        );
+        res.json({ success: true, ...data });
+    } catch (error) {
+        log.error("Upload error:", error);
+        res.status(500).send("Error processing file");
     }
 });
 
@@ -322,9 +413,9 @@ app.post("/api/upload/:credential", upload.single("file"), async (req, res) => {
             const oldFile = storage_data[credential].files[existingFileIndex];
             star = oldFile.star;
             try {
-                fs.unlinkSync(oldFile.systemPath); // 删除旧文件
+                oldFile.systemPath && fs.unlinkSync(oldFile.systemPath); // 删除旧文件
             } catch (err) {
-                console.log(`删除文件 ${oldFile.systemPath} 失败:`, err);
+                log.error(`删除文件 ${oldFile.systemPath} 失败:`, err);
             }
             storage_data[credential].files.splice(existingFileIndex, 1); // 从列表中移除旧文件
         }
@@ -338,6 +429,7 @@ app.post("/api/upload/:credential", upload.single("file"), async (req, res) => {
             systemPath: file.path,
             timestamp: new Date().toISOString(),
             size: stats.size || 0, // 确保有默认值
+            type: "file",
         };
         storage_data[credential].files.unshift(data);
 
@@ -358,7 +450,7 @@ app.post("/api/upload/:credential", upload.single("file"), async (req, res) => {
                     storage_data[credential].files[removeIndex].systemPath
                 ); // 删除文件系统中的文件
             } catch (err) {
-                console.log(`Failed to delete file ${file.systemPath}:`, err);
+                log.error(`Failed to delete file ${file.systemPath}:`, err);
             }
             // });
 
@@ -368,10 +460,14 @@ app.post("/api/upload/:credential", upload.single("file"), async (req, res) => {
         }
 
         saveUserData(credential, storage_data[credential]);
-		broadcast(credential, JSON.stringify({type: 'file', data: data.id}), from)
+        broadcast(
+            credential,
+            JSON.stringify({ type: "file", data: data.id }),
+            from
+        );
         res.json({ success: true, ...data });
     } catch (error) {
-        console.log("Upload error:", error);
+        log.error("Upload error:", error);
         res.status(500).send("Error processing file");
     }
 });
@@ -400,7 +496,7 @@ app.delete("/api/file/:credential/:id", async (req, res) => {
         saveUserData(credential, storage_data[credential]);
         res.json({ success: true });
     } catch (error) {
-        console.log("Delete error:", error);
+        log.error("Delete error:", error);
         res.status(500).send("Error deleting file");
     }
 });
@@ -438,12 +534,12 @@ app.get("/api/download/:credential/:fileId", async (req, res) => {
         const fileStream = fs.createReadStream(file.systemPath);
         fileStream.pipe(res);
     } catch (error) {
-        console.log("Download error:", error);
+        log.error("Download error:", error);
         res.status(500).send("Error downloading file");
     }
 });
 
-onCopy(
+initServerWss(
     app.listen(PORT, () => {
         console.log(`Server is running at ${PORT}`, `${ip}:${PORT}`);
     })

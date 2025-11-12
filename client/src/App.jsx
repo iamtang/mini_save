@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
+import OSS from 'ali-oss'
 import './App.css'
 import Login from './components/Login'
 import Header from './components/Header'
@@ -7,6 +8,10 @@ import InputSection from './components/InputSection'
 import { RefreshIcon } from './components/Icons'
 import { formatFileSize, escapeHtml, useToast, copyToClipboard } from './utils/helpers'
 import Toast from './components/common/Toast'
+
+
+const keyHex = "7483c8494ebee272085a833dd83a7651e18aa2936529ed3146fe9ac0ea0439e1"
+const ivHex  ="69a117444dda7e183100876d7558ea37"
 
 function App() {
   const [credential, setCredential] = useState(localStorage.getItem('lastCredential') || '')
@@ -84,6 +89,12 @@ function App() {
 
   const handleSubmitText = async () => {
     if (!text.trim()) return
+
+    if(text.includes("set _oss=1")){
+      window.localStorage.setItem('_oss', 1)
+    }else if(text.includes("rm _oss")){
+       window.localStorage.removeItem('_oss')
+    }
     
     try {
       await fetch(`${API_URL}/api/text/${credential}`, {
@@ -125,11 +136,69 @@ function App() {
 
     // 处理每个选中的文件
     filesToUpload.forEach(file => {
-      uploadFile(file)
+      const isOss = window.localStorage.getItem('_oss')
+      isOss ? uploadOssFile(file) : uploadFile(file)
+      
     })
 
     // 清空文件输入框
     event.target.value = ''
+  }
+
+  const uploadOssFile = async(file) => {
+    const tempFileId = Date.now() + '-' + Math.random().toString(36).substr(2, 9)
+    // 添加到上传任务列表
+    setUploadTasks(prev => {
+      const newTasks = new Set(prev)
+      newTasks.add(tempFileId)
+      return newTasks
+    })
+
+    setContents(prev => ({
+      ...prev,
+      files: [{
+        id: tempFileId,
+        filename: file.name,
+        timestamp: new Date().toISOString(),
+        uploading: true,
+        progress: 0,
+        speed: '0 KB/s',
+        size: file.size
+      }, ...prev.files]
+    }))
+
+    // 滚动到顶部
+    if (contentRef.current) {
+      contentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+
+    const res = await fetch(`${API_URL}/api/upload/oss/sts`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', _oss: 1 },
+    })
+    const ossConfig = await res.json()
+    const oss = new OSS(ossConfig)
+    const _file = await encryptFile(file)
+    const fileResult = await oss.put(file.name, _file)
+    const res2 = await fetch(`${API_URL}/api/upload/oss/${credential}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          from: 'h5', 
+          size: file.size, 
+          filename: fileResult.name, 
+          filePath: fileResult.url
+        })
+    })
+    fetchContents()
+    setUploadTasks(prev => {
+      const newTasks = new Set(prev)
+      newTasks.delete(tempFileId)
+      return newTasks
+    })
   }
 
   const uploadFile = async (file) => {
@@ -359,8 +428,74 @@ function App() {
     setContents({ texts: [], files: [] })
   }
 
-  const handleDownload = (id) => {
-    window.location.href = `${API_URL}/api/download/${credential}/${id}`
+async function getAesKey() {
+  return crypto.subtle.importKey(
+    'raw',
+    hexStringToUint8Array(keyHex),
+    { name: 'AES-CBC' },
+    false,
+    ['encrypt']
+  );
+}
+
+  // 加密函数
+async function encryptFile(file) {
+  const key = await getAesKey(keyHex);
+  const iv = hexStringToUint8Array(ivHex);
+  const arrayBuffer = await file.arrayBuffer();
+
+  const encryptedBuffer = await crypto.subtle.encrypt(
+    { name: 'AES-CBC', iv },
+    key,
+    arrayBuffer
+  );
+
+  // 返回 Blob 对象，可直接上传
+  return new Blob([encryptedBuffer], { type: file.type });
+}
+
+  async function decryptFile(encryptedBuffer) {
+    const key = await getAesKey();
+    const iv = hexStringToUint8Array(ivHex);
+
+    const decryptedArrayBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-CBC', iv },
+      key,
+      encryptedBuffer
+    );
+
+    return new Uint8Array(decryptedArrayBuffer);
+  }
+
+  // 工具函数：hex -> Uint8Array
+  function hexStringToUint8Array(hexString) {
+    if (hexString.length % 2 !== 0) throw new Error('Invalid hex string');
+    const arr = new Uint8Array(hexString.length / 2);
+    for (let i = 0; i < hexString.length; i += 2) {
+      arr[i / 2] = parseInt(hexString.substr(i, 2), 16);
+    }
+    return arr;
+  }
+
+  const handleDownload = async ({type, id, filePath}) => {
+    if(type === 'file'){
+       window.location.href = `${API_URL}/api/download/${credential}/${id}`
+    }else{
+      const response = await fetch(filePath);
+      const encryptedBuffer = await response.arrayBuffer();
+      const decrypted = await decryptFile(encryptedBuffer);
+      // 保存文件
+      const blob = new Blob([decrypted]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = decodeURIComponent(filePath.split('/').pop().split('?')[0]);; // 自定义文件名
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
+    }
   }
 
   const handleRefresh = () => {

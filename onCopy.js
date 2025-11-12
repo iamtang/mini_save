@@ -1,9 +1,8 @@
 const { clipboard, app, powerMonitor } = require('electron');
-const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
-const { downloadFile, uploadFile, ossInit, ossUpload, sleep } = require('./utils.js')
+const { downloadFile, uploadFile, ossInit, ossUpload, sleep, textUpload } = require('./utils.js')
 const log = require('electron-log/main');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
@@ -11,9 +10,6 @@ let preContent = null;
 let currentContent = null;
 // 房间管理对象
 global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
-
-
-
 
 async function onCopy(server, config){
     if(!config.CREDENTIAL) return null
@@ -35,12 +31,12 @@ async function onCopy(server, config){
 			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE){
 				continue
 			}
-			const res = oss ? await ossUpload(oss, filePath) : await uploadFile(filePath, config)
+			const res = oss ? await ossUpload(oss, filePath, config) : await uploadFile(filePath, config)
 			socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}))
 			// console.log('===文件===')
 		}else if(currentContent){
 			let currentContent = clipboard.readText();
-			await axios.post(`http://${config.url}/api/text/${config.CREDENTIAL}`, {text: currentContent})
+			await textUpload(currentContent, config)
 			socket.send(JSON.stringify({type: 'text', data: currentContent}))
 			// log.info('===文本===')
 		}

@@ -9,31 +9,58 @@ const FormData = require('form-data');
 
 const key = Buffer.from('7483c8494ebee272085a833dd83a7651e18aa2936529ed3146fe9ac0ea0439e1', 'hex'); // 256-bit 密钥
 const iv = Buffer.from('69a117444dda7e183100876d7558ea37', 'hex');;  // 初始向量
-const hexPath = path.join(app.getPath('userData'), 'hex');
+const userDataPath = path.join(process.cwd(), "userData");
+const hexPath = path.join(app?.getPath('userData') || userDataPath, 'hex');
 if (!fs.existsSync(hexPath)) {
   fs.mkdirSync(hexPath, { recursive: true });
 }
 
+async function getSts(config){
+  return await axios.get(`http://${config.url}/api/upload/oss/sts`, {
+    headers: {
+      _oss: 1
+    }
+  }).then(res => res.data)
+}
 async function ossInit(config){
   try {
-      const oss = new OSS({
-        region: config.REGION,
-        accessKeyId: config.ACCESSKEID,
-        accessKeySecret: config.ACCESSKEYSECRET,
-        bucket: config.BUCKET
-      });
-      await oss.list({ "max-keys": 5 });
-      console.log('oss 服务正常')
-      return oss
+    const stsConfig = await getSts(config)
+    console.log(stsConfig)
+    const oss = new OSS({
+      ...stsConfig,
+      refreshSTSToken: async () => {
+        const stsConfig = await getSts(config)
+        return {
+          region: stsConfig.region,
+          accessKeyId: stsConfig.AccessKeyId,
+          accessKeySecret: stsConfig.AccessKeySecret,
+          stsToken: stsConfig.SecurityToken,
+          bucket: stsConfig.bucket,
+        }
+      },
+      // 👇 设置刷新间隔（单位：毫秒）
+      // 一般设置在 50 分钟左右（STS 通常 1 小时过期）
+      refreshSTSTokenInterval: 3000000
+    });
+    await oss.list({ "max-keys": 5 });
+    console.log('oss 服务正常')
+    return oss
   } catch (error) {
       return null
   }
 }
 
-async function ossUpload(oss, filePath){
+async function ossUpload(oss, filePath, config){
   const filename = path.basename(filePath)
   const hexFile = await encryptFile(filePath)
+  const size = fs.statSync(filePath).size
   const result = await oss.put(`test/${filename}`, hexFile);
+  await axios.post(`http://${config.url}/api/upload/oss/${config.CREDENTIAL}`, {
+    size, 
+    filename, 
+    filePath: result.url
+  })
+  // console.log(aa, result.url)
   return {url: result.url}
 }
 
@@ -150,6 +177,11 @@ async function downloadFile(url, isHex){
     return saveFilePath;
 }
 
+async function textUpload(data, config) {
+  await axios.post(`http://${config.url}/api/text/${config.CREDENTIAL}`, {text: data})
+  
+}
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -163,5 +195,6 @@ module.exports = {
     decryptFile,
     ossInit,
     ossUpload,
+    textUpload,
     sleep
 }

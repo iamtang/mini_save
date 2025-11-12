@@ -46,7 +46,7 @@ const ContentItem = ({ item, onCopy, onDelete, onStar, onDownload, escapeHtml, f
       className="content-item"
       onClick={() => {
         if (!item.uploading) {
-          onDownload(item.id)
+          onDownload(item)
         }
       }}
     >

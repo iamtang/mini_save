@@ -3,16 +3,30 @@ const multer = require('multer')
 const fs = require('fs')
 const path = require('path')
 const WebSocket = require('ws');
+const {STS} =  require('ali-oss');
 // const cors = require('cors')
 const log = require('electron-log/main');
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.initialize()
 
+let credentials = null;
+let sts = null
+let ossConf = null
 module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 }) => {
   const userDataPath = _app.getPath('userData');
   const DATA_DIR = path.join(userDataPath, 'data')
   const UPLOADS_DIR = path.join(userDataPath, 'uploads')
+  try{
+    ossConf =  require('./.oss.json');
+    sts = new STS({
+      accessKeyId: ossConf.accessKeyId,
+      accessKeySecret: ossConf.accessKeySecret,
+    });
+  }catch(e){
 
+  }
+  
+  
   const app = express();
   // app.use(cors())
   app.use(express.json())
@@ -230,6 +244,75 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
     }
   })
 
+  app.get('/api/upload/oss/sts', async(req,res) => {
+    const {_oss} = req.headers
+    if(!_oss || !ossConf){
+      return res.status(404).send('not found')
+    }
+    if(credentials && new Date() < new Date(credentials.expiration)){
+      return res.json(credentials)
+    }
+    const result = await sts.assumeRole(ossConf.roleArn, null, 3600);
+    credentials = {
+      region: ossConf.region,
+      bucket: ossConf.bucket,
+      accessKeyId: result.credentials.AccessKeyId,
+      accessKeySecret: result.credentials.AccessKeySecret,
+      stsToken: result.credentials.SecurityToken,
+      expiration: result.credentials.Expiration
+    }
+    res.json(credentials);
+  })
+
+  app.post('/api/upload/oss/:credential', async (req, res) => {
+    const { credential } = req.params
+    const { from, size, filename, filePath } = req.body
+    let star = 0
+    
+    try {
+      if (!storage_data[credential]) {
+        storage_data[credential] = loadUserData(credential)
+      }
+      const now = new Date()
+      const data = {
+        star,
+        id: +now,
+        filename,
+        filePath,
+        timestamp: now.toISOString(),
+        size: size || 0,  // 确保有默认值
+        type: 'oss'
+      }
+      storage_data[credential].files.unshift(data)
+      // 检查并删除多余文件
+      while (storage_data[credential].files.filter(item => !item.star).length > MAX_FILE_NUMBER) {
+        // 删除多余的文件记录和文件系统中的实际文件
+        const removeIndex =  storage_data[credential].files.findLastIndex(item => item.star !== 1);
+        // userData.texts.splice(removeIndex, 1);
+        // const extraFiles = storage_data[credential].files.slice(MAX_FILE_NUMBER);
+        // extraFiles.forEach(file => {
+        try {
+            storage_data[credential].files[removeIndex].systemPath && fs.unlinkSync(storage_data[credential].files[removeIndex].systemPath); // 删除文件系统中的文件
+        } catch (err) {
+          log.error(`Failed to delete file ${file.systemPath}:`, err);
+        }
+        // });
+
+        // 保留最新的 MAX_FILE_NUMBER 条文件记录
+        storage_data[credential].files.splice(removeIndex, 1);
+        // storage_data[credential].files = storage_data[credential].files.slice(0, MAX_FILE_NUMBER);
+    }
+
+      saveUserData(credential, storage_data[credential])
+      console.log(credential, JSON.stringify({type: 'oss', data: filePath}), from)
+      broadcast(credential, JSON.stringify({type: 'oss', data: filePath}), from)
+      res.json({ success: true, ...data })
+    } catch (error) {
+      log.error('Upload error:', error)
+      res.status(500).send('Error processing file')
+    }
+  })
+
   app.post('/api/upload/:credential', upload.single('file'), async (req, res) => {
     const { credential } = req.params
     const file = req.file
@@ -254,7 +337,7 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
         const oldFile = storage_data[credential].files[existingFileIndex];
         star = oldFile.star
         try {
-          fs.unlinkSync(oldFile.systemPath); // 删除旧文件
+          oldFile.systemPath && fs.unlinkSync(oldFile.systemPath); // 删除旧文件
         } catch (err) {
           log.error(`删除文件 ${oldFile.systemPath} 失败:`, err);
         }
@@ -269,7 +352,8 @@ module.exports = (_app, { url, PORT, MAX_TEXT_NUMBER = 20, MAX_FILE_NUMBER = 10 
         filename: originalname,
         systemPath: file.path,
         timestamp: new Date().toISOString(),
-        size: stats.size || 0  // 确保有默认值
+        size: stats.size || 0,  // 确保有默认值
+        type: 'file'
       }
       storage_data[credential].files.unshift(data)
 
