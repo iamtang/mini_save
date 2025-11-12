@@ -105,10 +105,10 @@
                 <label for="SERVER_ADDRESS">服务端地址</label>
                 <input type="text" id="SERVER_ADDRESS" placeholder="服务端为空">
             </div>
-            <div class="form-group">
+            <!-- <div class="form-group">
                 <label for="PORT">端口</label>
                 <input type="number" id="PORT" value="3000">
-            </div>
+            </div> -->
             <div class="form-group">
                 <label for="CREDENTIAL">口令</label>
                 <input type="text" id="CREDENTIAL" maxlength="6" placeholder="请输入口令">
@@ -152,7 +152,7 @@
 
         window.electronAPI.loadSettings().then(settings => {
             document.getElementById('SERVER_ADDRESS').value = settings.SERVER_ADDRESS || '';
-            document.getElementById('PORT').value = settings.PORT || 3000;
+            // document.getElementById('PORT').value = settings.PORT || 3000;
             document.getElementById('CREDENTIAL').value = settings.CREDENTIAL || '';
             document.getElementById('MAX_TEXT_NUMBER').value = settings.MAX_TEXT_NUMBER || '';
             document.getElementById('MAX_FILE_NUMBER').value = settings.MAX_FILE_NUMBER || '';
@@ -162,7 +162,7 @@
         document.getElementById('applyButton').addEventListener('click', () => {
             const settings = {
                 SERVER_ADDRESS: document.getElementById('SERVER_ADDRESS').value,
-                PORT: document.getElementById('PORT').value,
+                // PORT: document.getElementById('PORT').value,
                 CREDENTIAL: document.getElementById('CREDENTIAL').value,
                 MAX_TEXT_NUMBER: document.getElementById('MAX_TEXT_NUMBER').value,
                 MAX_FILE_NUMBER: document.getElementById('MAX_FILE_NUMBER').value,
