@@ -24,7 +24,7 @@ async function onCopy(server, config){
 	while(true){
 		await sleep(1000)
 		currentContent = clipboard.read('public.file-url') || clipboard.readText();
-		if(currentContent === preContent) continue;
+		if(currentContent === preContent || config.isStop) continue;
 		if(clipboard.read('public.file-url')){
 			const filePath = decodeURIComponent(currentContent.replace('file://',''));
 			const stats = fs.statSync(filePath);
@@ -44,23 +44,23 @@ async function onCopy(server, config){
 	};
 }
 
-function onMessage(msg, { url, CREDENTIAL, roomID }){
+function onMessage(msg, config){
     const data = JSON.parse(msg);
     // 口令不一致，无需同步
-    if(roomID !== CREDENTIAL && roomID) return;
+    if(config.roomID !== config.CREDENTIAL && config.roomID || config.isStop) return;
     // data.type !== 'ping' && log.info(data, '=======')
     if (data.type === 'text') {
         currentContent = preContent = data.data
         clipboard.writeText(currentContent)
     } else if ((data.type === 'file' || data.type === 'oss') && powerMonitor.getSystemIdleTime() < 300) {
-        downloadFile(data.type === 'file' ? `${url}/api/download/${CREDENTIAL}/${data.data}` : data.data, data.type === 'oss').then(async (res) => {
+        downloadFile(data.type === 'file' ? `${config.url}/api/download/${config.CREDENTIAL}/${data.data}` : data.data, data.type === 'oss').then(async (res) => {
             currentContent = preContent = `file://${res}`
             clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
         })
     }
 }
 
-function initServerWss(server, { url, CREDENTIAL }) {
+function initServerWss(server, config) {
 	const wss = new WebSocket.Server({ noServer: true });
 	// 处理 WebSocket 连接
 	wss.on('connection', (ws, req) => {
@@ -94,9 +94,9 @@ function initServerWss(server, { url, CREDENTIAL }) {
 	});
 	return {
 		send(data) {
-            if(!rooms.get(CREDENTIAL)) return
+            if(!rooms.get(config.CREDENTIAL)) return
             // 同步给同口令的设备
-            for (const client of rooms.get(CREDENTIAL)) {
+            for (const client of rooms.get(config.CREDENTIAL)) {
                 if (client.readyState === WebSocket.OPEN) {
                     client.send(data);
                 }
@@ -105,19 +105,19 @@ function initServerWss(server, { url, CREDENTIAL }) {
 	}
 }
 
-function reConnentClientWss({ url, CREDENTIAL }) {
+function reConnentClientWss(config) {
 	setTimeout(() => {
 		log.info('正在重连')
-		socket = initClientWss({ url, CREDENTIAL });
+		socket = initClientWss(config);
 	}, 5000)
 }
 
-function initClientWss({ url, CREDENTIAL }) {
-	const host = url.replace('https://', 'wss://').replace('http://', 'ws://')
-	const socket = new WebSocket(`${host}/${CREDENTIAL}`);
+function initClientWss(config) {
+	const host = config.url.replace('https://', 'wss://').replace('http://', 'ws://')
+	const socket = new WebSocket(`${host}/${config.CREDENTIAL}`);
 	socket.on('open', () => {
 		log.info('WebSocket 连接成功');
-		socket.on('message', (msg) => onMessage(msg, { url, CREDENTIAL }));
+		socket.on('message', (msg) => onMessage(msg, config));
 		setInterval(() => {
 			socket.send(JSON.stringify({ type: 'ping' }));
 		}, 30000);
@@ -128,7 +128,7 @@ function initClientWss({ url, CREDENTIAL }) {
 	};
 
 	socket.onclose = () => {
-		reConnentClientWss({ url, CREDENTIAL }); // 调用重连逻辑
+		reConnentClientWss(config); // 调用重连逻辑
 	};
 
 	return socket

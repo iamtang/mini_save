@@ -46,18 +46,41 @@ app.whenReady().then(() => {
   // 创建托盘菜单
   const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
   // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
-  const contextMenu = Menu.buildFromTemplate([
-    { label: '打开网址', click: () => shell.openExternal(config.url) },
-    { label: '管理', click: () => shell.openExternal(`file://${app.getPath('userData')}`) },
-    { label: `设置`, click: () => {
-      const createSettingWindow = require('./page/setting/setting.js'); 
-      createSettingWindow()
-    } },
-    { label: '退出', click: () => app.quit() },
-  ]);
+  const buildContextMenu = () => {
+    return Menu.buildFromTemplate([
+      {
+        label: config.isStop ? '启动' : '停止',
+        click: () => {
+          config.isStop = !config.isStop;
+          // 重新创建菜单刷新 label
+          tray.setContextMenu(buildContextMenu());
+        }
+      },
+      {
+        label: '打开网址',
+        click: () => shell.openExternal('https://example.com')
+      },
+      {
+        label: '管理',
+        click: () => shell.openExternal(`file://${app.getPath('userData')}`)
+      },
+      {
+        label: '设置',
+        click: () => {
+          const createSettingWindow = require('./page/setting/setting.js'); 
+          createSettingWindow();
+        }
+      },
+      {
+        label: '退出',
+        click: () => app.quit()
+      }
+    ]);
+  };
 
   tray.setToolTip('Electron App Running in Background');
-  tray.setContextMenu(contextMenu);
+  tray.setContextMenu(buildContextMenu());
+
 });
 
 app.on('window-all-closed', (event) => {
