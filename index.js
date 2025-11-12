@@ -54,11 +54,12 @@ app.whenReady().then(() => {
           config.isStop = !config.isStop;
           // 重新创建菜单刷新 label
           tray.setContextMenu(buildContextMenu());
+          tray.setImage(path.join(__dirname, config.isStop ? 'icons/icon2-d.png' : 'icons/icon2.png'));
         }
       },
       {
         label: '打开网址',
-        click: () => shell.openExternal('https://example.com')
+        click: () => shell.openExternal(config.url)
       },
       {
         label: '管理',
