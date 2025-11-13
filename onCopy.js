@@ -10,7 +10,7 @@ let preContent = null;
 let currentContent = null;
 // 房间管理对象
 global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
-
+let socket = null
 async function onCopy(server, config){
     if(!config.CREDENTIAL) return null
 	// 服务端
@@ -18,7 +18,7 @@ async function onCopy(server, config){
 		initServerWss(server, config)
 	}
 	// 客户端
-	const socket = initClientWss(config)
+	socket = initClientWss(config)
 	currentContent = clipboard.read('public.file-url') || clipboard.readText();
 	while(true){
 		await sleep(1000)
