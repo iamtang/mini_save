@@ -4,14 +4,15 @@ const path = require('path');
 const WebSocket = require('ws');
 const { downloadFile, uploadFile, ossInit, ossUpload, sleep, textUpload } = require('./utils.js')
 const log = require('electron-log/main');
-log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
-log.initialize()
+
 let preContent = null;
 let currentContent = null;
 // 房间管理对象
 global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
 let socket = null
 async function onCopy(server, config){
+	log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
+	log.initialize()
     if(!config.CREDENTIAL) return null
 	// 服务端
 	if(config.isServer){

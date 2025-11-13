@@ -18,8 +18,7 @@ module.exports = ({
 }) => {
     const DATA_DIR = path.join(userDataPath, "data");
     const UPLOADS_DIR = path.join(userDataPath, "uploads");
-    log.transports.file.resolvePathFn = () =>
-        path.join(userDataPath, "main.log");
+    log.transports.file.resolvePathFn = () => path.join(userDataPath, "main.log");
     log.initialize();
     try {
         ossConf = require("./.oss.json");

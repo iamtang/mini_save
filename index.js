@@ -1,11 +1,9 @@
 const { app, Tray, Menu, shell } =  require('electron');
-const log = require('electron-log/main');
 const path =  require('path');
 const fs =  require('fs');
-const onCopy =require('./onCopy.js')
-const Server =  require('./server.js');
-log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
-log.initialize()
+const onCopy = require('./onCopy.js')
+const Server = require('./server.js');
+
 const userDataPath = app.getPath('userData');
 let server = null
 
@@ -18,7 +16,7 @@ function startServer(config) {
 function stopServer() {
   if (server) {
     server.close(() => {
-      log.info('Server closed.');
+      console.log('Server closed.');
     });
   }
 }
