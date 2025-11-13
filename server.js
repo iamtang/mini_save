@@ -10,7 +10,7 @@ const log = require("electron-log/main");
 let credentials = null;
 let sts = null;
 let ossConf = null;
-module.exports = ({
+module.exports = async ({
     userDataPath,
     PORT = 3000,
     MAX_TEXT_NUMBER = 20,
@@ -27,6 +27,7 @@ module.exports = ({
             accessKeyId: ossConf.accessKeyId,
             accessKeySecret: ossConf.accessKeySecret,
         });
+        await sts.assumeRole(ossConf.roleArn, null, 3600);
     } catch (e) {
         ossConf = sts = null
     }
