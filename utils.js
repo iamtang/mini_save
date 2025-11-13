@@ -9,7 +9,7 @@ const FormData = require('form-data');
 
 const key = Buffer.from('7483c8494ebee272085a833dd83a7651e18aa2936529ed3146fe9ac0ea0439e1', 'hex'); // 256-bit 密钥
 const iv = Buffer.from('69a117444dda7e183100876d7558ea37', 'hex');;  // 初始向量
-
+let isOss = true
 async function getSts(config){
   return await axios.get(`${config.url}/api/upload/oss/sts`, {
     headers: {
@@ -30,15 +30,16 @@ async function ossInit(config){
       refreshSTSTokenInterval: 3000000
     });
     // await oss.list({ "max-keys": 5 });
-    console.log('oss 服务正常')
     return oss
   } catch (error) {
-      return null
+    isOss = false
+    return null
   }
 }
 
 async function ossUpload(filePath, config){
   try {
+    if(!isOss) throw new Error('ossError')
     const oss = await ossInit(config)
     const filename = path.basename(filePath)
     const hexFile = await encryptFile(filePath)
