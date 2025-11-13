@@ -27,7 +27,9 @@ module.exports = ({
             accessKeyId: ossConf.accessKeyId,
             accessKeySecret: ossConf.accessKeySecret,
         });
-    } catch (e) {}
+    } catch (e) {
+        ossConf = sts = null
+    }
 
     const app = express();
     // app.use(cors())
