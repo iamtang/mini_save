@@ -9,11 +9,6 @@ const FormData = require('form-data');
 
 const key = Buffer.from('7483c8494ebee272085a833dd83a7651e18aa2936529ed3146fe9ac0ea0439e1', 'hex'); // 256-bit 密钥
 const iv = Buffer.from('69a117444dda7e183100876d7558ea37', 'hex');;  // 初始向量
-const userDataPath = path.join(process.cwd(), "userData");
-const hexPath = path.join(app?.getPath('userData') || userDataPath, 'hex');
-if (!fs.existsSync(hexPath)) {
-  fs.mkdirSync(hexPath, { recursive: true });
-}
 
 async function getSts(config){
   return await axios.get(`${config.url}/api/upload/oss/sts`, {
@@ -29,6 +24,7 @@ async function ossInit(config){
       ...stsConfig,
       refreshSTSToken: async () => {
         const stsConfig = await getSts(config)
+        console.log('=====refreshSTSToken=======')
         return {
           region: stsConfig.region,
           accessKeyId: stsConfig.AccessKeyId,
@@ -39,7 +35,7 @@ async function ossInit(config){
       },
       // 👇 设置刷新间隔（单位：毫秒）
       // 一般设置在 50 分钟左右（STS 通常 1 小时过期）
-      refreshSTSTokenInterval: 3000000
+      refreshSTSTokenInterval: 300000
     });
     await oss.list({ "max-keys": 5 });
     console.log('oss 服务正常')
@@ -52,8 +48,10 @@ async function ossInit(config){
 async function ossUpload(oss, filePath, config){
   const filename = path.basename(filePath)
   const hexFile = await encryptFile(filePath)
+  console.log(hexFile, '=====hexFile===')
   const size = fs.statSync(filePath).size
   const result = await oss.multipartUpload(`test/${filename}`, hexFile);
+  console.log(result, '=====ossUpload===')
   const url = result.url || result.res.requestUrls[0].split('?')[0]
   await axios.post(`${config.url}/api/upload/oss/${config.CREDENTIAL}`, {
     size, 
@@ -113,12 +111,7 @@ function encryptFile(filePath) {
   const fileBuffer = fs.readFileSync(filePath);
   const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
   const encrypted = Buffer.concat([cipher.update(fileBuffer), cipher.final()]);
-  
-  // 保存临时加密文件
-  const encryptedPath = path.join(hexPath, path.basename(filePath));
-  fs.writeFileSync(encryptedPath, encrypted);
-
-  return encryptedPath;
+  return encrypted; // ✅ 返回 Buffer
 }
 
 async function uploadFile(filePath, config){
