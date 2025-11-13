@@ -282,7 +282,7 @@ module.exports = ({
         if (credentials && new Date() < new Date(credentials.expiration)) {
             return res.json(credentials);
         }
-        const result = await sts.assumeRole(ossConf.roleArn, null, 900);
+        const result = await sts.assumeRole(ossConf.roleArn, null, 3600);
         credentials = {
             region: ossConf.region,
             bucket: ossConf.bucket,
