@@ -28,7 +28,7 @@ async function onCopy(server, config){
 		if(clipboard.read('public.file-url')){
 			const filePath = decodeURIComponent(currentContent.replace('file://',''));
 			const stats = fs.statSync(filePath);
-			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE){
+			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE || !stats.isFile()){
 				continue
 			}
 			const res = await ossUpload(filePath, config)
