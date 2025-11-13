@@ -17,7 +17,6 @@ async function onCopy(server, config){
 	if(config.isServer){
 		initServerWss(server, config)
 	}
-	const oss = await ossInit(config)
 	// 客户端
 	const socket = initClientWss(config)
 	currentContent = clipboard.read('public.file-url') || clipboard.readText();
@@ -31,7 +30,7 @@ async function onCopy(server, config){
 			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE){
 				continue
 			}
-			const res = oss ? await ossUpload(oss, filePath, config) : await uploadFile(filePath, config)
+			const res = await ossUpload(filePath, config)
 			socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}))
 			// console.log('===文件===')
 		}else if(currentContent){

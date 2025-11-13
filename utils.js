@@ -23,21 +23,13 @@ async function ossInit(config){
     const oss = new OSS({
       ...stsConfig,
       refreshSTSToken: async () => {
-        const stsConfig = await getSts(config)
-        console.log('=====refreshSTSToken=======')
-        return {
-          region: stsConfig.region,
-          accessKeyId: stsConfig.AccessKeyId,
-          accessKeySecret: stsConfig.AccessKeySecret,
-          stsToken: stsConfig.SecurityToken,
-          bucket: stsConfig.bucket,
-        }
+       
       },
       // 👇 设置刷新间隔（单位：毫秒）
       // 一般设置在 50 分钟左右（STS 通常 1 小时过期）
-      refreshSTSTokenInterval: 300000
+      refreshSTSTokenInterval: 3000000
     });
-    await oss.list({ "max-keys": 5 });
+    // await oss.list({ "max-keys": 5 });
     console.log('oss 服务正常')
     return oss
   } catch (error) {
@@ -45,21 +37,24 @@ async function ossInit(config){
   }
 }
 
-async function ossUpload(oss, filePath, config){
-  const filename = path.basename(filePath)
-  const hexFile = await encryptFile(filePath)
-  console.log(hexFile, '=====hexFile===')
-  const size = fs.statSync(filePath).size
-  const result = await oss.multipartUpload(`test/${filename}`, hexFile);
-  console.log(result, '=====ossUpload===')
-  const url = result.url || result.res.requestUrls[0].split('?')[0]
-  await axios.post(`${config.url}/api/upload/oss/${config.CREDENTIAL}`, {
-    size, 
-    filename, 
-    filePath: url
-  })
-  // console.log(aa, result.url)
-  return {url}
+async function ossUpload(filePath, config){
+  try {
+    const oss = await ossInit(config)
+    const filename = path.basename(filePath)
+    const hexFile = await encryptFile(filePath)
+    const size = fs.statSync(filePath).size
+    const result = await oss.multipartUpload(`test/${filename}`, hexFile);
+    const url = result.url || result.res.requestUrls[0].split('?')[0]
+    await axios.post(`${config.url}/api/upload/oss/${config.CREDENTIAL}`, {
+      size, 
+      filename, 
+      filePath: url
+    })
+    return {url}
+  } catch (error) {
+    return uploadFile(filePath, config)
+  }
+ 
 }
 
 // 获取本机 IP 地址
