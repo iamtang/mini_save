@@ -23,23 +23,28 @@ async function onCopy(server, config){
 	currentContent = clipboard.read('public.file-url') || clipboard.readText();
 	while(true){
 		await sleep(1000)
-		currentContent = clipboard.read('public.file-url') || clipboard.readText();
-		if(currentContent === preContent || config.isStop) continue;
-		if(clipboard.read('public.file-url')){
-			const filePath = decodeURIComponent(currentContent.replace('file://',''));
-			const stats = fs.statSync(filePath);
-			if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE || !stats.isFile()){
-				continue
+		try {
+			currentContent = clipboard.read('public.file-url') || clipboard.readText();
+			if(currentContent === preContent || config.isStop) continue;
+			if(clipboard.read('public.file-url')){
+				const filePath = decodeURIComponent(currentContent.replace('file://',''));
+				const stats = fs.statSync(filePath);
+				if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE || !stats.isFile()){
+					continue
+				}
+				const res = await ossUpload(filePath, config)
+				socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}))
+				// console.log('===文件===')
+			}else if(currentContent){
+				let currentContent = clipboard.readText();
+				await textUpload(currentContent, config)
+				socket.send(JSON.stringify({type: 'text', data: currentContent}))
+				// log.info('===文本===')
 			}
-			const res = await ossUpload(filePath, config)
-			socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}))
-			// console.log('===文件===')
-		}else if(currentContent){
-			let currentContent = clipboard.readText();
-			await textUpload(currentContent, config)
-			socket.send(JSON.stringify({type: 'text', data: currentContent}))
-			// log.info('===文本===')
+		} catch (error) {
+			console.log('onCopy error！', error)
 		}
+		
 		preContent = currentContent
 	};
 }
