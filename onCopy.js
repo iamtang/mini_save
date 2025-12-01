@@ -27,7 +27,7 @@ async function onCopy(server, config){
 			currentContent = clipboard.read('public.file-url') || clipboard.readText();
 			if(currentContent === preContent || config.isStop) continue;
 			if(clipboard.read('public.file-url')){
-				const filePath = decodeURIComponent(currentContent.replace('file://',''));
+				const filePath = decodeURIComponent(currentContent.replace('file://','').replace(/^localhost/,''));
 				const stats = fs.statSync(filePath);
 				if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE || !stats.isFile()){
 					continue
@@ -42,7 +42,7 @@ async function onCopy(server, config){
 				// log.info('===文本===')
 			}
 		} catch (error) {
-			console.log('onCopy error！', error)
+			log.info('onCopy error！', error)
 		}
 		
 		preContent = currentContent
