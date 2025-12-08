@@ -201,7 +201,7 @@ function App() {
         body: JSON.stringify({ 
           from: 'h5', 
           size: file.size, 
-          filename: fileResult.name, 
+          filename: file.name, 
           filePath: url
         })
     })
