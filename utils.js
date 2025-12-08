@@ -44,7 +44,7 @@ async function ossUpload(filePath, config){
     const filename = path.basename(filePath)
     const hexFile = await encryptFile(filePath)
     const size = fs.statSync(filePath).size
-    const result = await oss.multipartUpload(`test/${filename}`, hexFile);
+    const result = await oss.multipartUpload(`m/temporary/${filename}`, hexFile);
     const url = result.url || result.res.requestUrls[0].split('?')[0]
     await axios.post(`${config.url}/api/upload/oss/${config.CREDENTIAL}`, {
       size, 

@@ -182,7 +182,7 @@ function App() {
     const ossConfig = await res.json()
     const oss = new OSS(ossConfig)
     const _file = await encryptFile(file)
-    const fileResult = await oss.multipartUpload(file.name, _file, {
+    const fileResult = await oss.multipartUpload(`m/temporary/${file.name}`, _file, {
       progress(p, checkpoint) {
         setContents(prev => ({
           ...prev,
