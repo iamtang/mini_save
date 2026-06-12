@@ -12,6 +12,9 @@ import Toast from './components/common/Toast'
 const keyHex = "7483c8494ebee272085a833dd83a7651e18aa2936529ed3146fe9ac0ea0439e1"
 const ivHex  ="69a117444dda7e183100876d7558ea37"
 
+// API 地址配置
+const API_URL = import.meta.env.VITE_API_URL || window.location.origin
+
 function App() {
   const [credential, setCredential] = useState(localStorage.getItem('lastCredential') || '')
   const [isAuth, setIsAuth] = useState(false)
@@ -172,42 +175,61 @@ function App() {
       })
     }
 
-    const res = await fetch(`${API_URL}/api/upload/oss/sts`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json', 'x-oss': 1 },
-    })
-    const ossConfig = await res.json()
-    const oss = new OSS(ossConfig)
-    const _file = await encryptFile(file)
-    const fileResult = await oss.multipartUpload(`m/temporary/${file.name}`, _file, {
-      progress(p, checkpoint) {
-        setContents(prev => ({
-          ...prev,
-          files: prev.files.map(f => 
-            f.id === tempFileId 
-              ? { ...f, progress: p * 100, speed: `${(p * 100).toFixed(2)}%` }
-              : f
-          )
-        }))
-      },
-    })
-    const url = fileResult.url || fileResult.res.requestUrls[0].split('?')[0]
-    const res2 = await fetch(`${API_URL}/api/upload/oss/${credential}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          from: 'h5', 
-          size: file.size, 
-          filename: file.name, 
-          filePath: url
-        })
-    })
-    fetchContents()
-    setUploadTasks(prev => {
-      const newTasks = new Set(prev)
-      newTasks.delete(tempFileId)
-      return newTasks
-    })
+    try {
+      const res = await fetch(`${API_URL}/api/upload/oss/sts`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', 'x-oss': 1 },
+      })
+      if (!res.ok) {
+        throw new Error('OSS配置不可用')
+      }
+      const ossConfig = await res.json()
+      const oss = new OSS(ossConfig)
+      const _file = await encryptFile(file)
+      const fileResult = await oss.multipartUpload(`m/temporary/${file.name}`, _file, {
+        progress(p) {
+          setContents(prev => ({
+            ...prev,
+            files: prev.files.map(f =>
+              f.id === tempFileId
+                ? { ...f, progress: p * 100, speed: `${(p * 100).toFixed(2)}%` }
+                : f
+            )
+          }))
+        },
+      })
+      const url = fileResult.url || fileResult.res.requestUrls[0].split('?')[0]
+      const res2 = await fetch(`${API_URL}/api/upload/oss/${credential}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'h5',
+            size: file.size,
+            filename: file.name,
+            filePath: url
+          })
+      })
+      fetchContents()
+      setUploadTasks(prev => {
+        const newTasks = new Set(prev)
+        newTasks.delete(tempFileId)
+        return newTasks
+      })
+    } catch (error) {
+      console.error('OSS上传失败:', error)
+      showCopyMessage('OSS上传失败: ' + error.message)
+      // 移除上传任务
+      setUploadTasks(prev => {
+        const newTasks = new Set(prev)
+        newTasks.delete(tempFileId)
+        return newTasks
+      })
+      // 移除临时文件记录
+      setContents(prev => ({
+        ...prev,
+        files: prev.files.filter(f => f.id !== tempFileId)
+      }))
+    }
   }
 
   const uploadFile = async (file) => {
@@ -419,6 +441,9 @@ function App() {
   }
 
 async function getAesKey() {
+  if (!window.crypto || !window.crypto.subtle) {
+    throw new Error('当前环境不支持加密功能，请使用 HTTPS 或 localhost')
+  }
   return crypto.subtle.importKey(
     'raw',
     hexStringToUint8Array(keyHex),
