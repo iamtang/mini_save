@@ -8,11 +8,11 @@
 ![GitHub license](https://img.shields.io/github/license/iamtang/mini_save)
 ![npm version](https://img.shields.io/npm/v/electron)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Node](https://img.shields.io/badge/node-%3E=14.0.0-brightgreen)
+![Node](https://img.shields.io/badge/node-%3E=20.0.0-brightgreen)
 
 **一款轻量级、高安全性的剪贴板同步工具**
 
-[功能特性](#-功能特性) • [快速开始](#-快速开始) • [使用说明](#-使用说明) • [部署��南](#-部署指南) • [常见问题](#-常见问题)
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [使用说明](#-使用说明) • [部署指南](#-部署指南) • [常见问题](#-常见问题)
 
 [English](./README_EN.md) | 简体中文
 
@@ -68,8 +68,8 @@
 
 ### 环境要求
 
-- **Node.js:** >= 14.0.0
-- **npm:** >= 6.0.0
+- **Node.js:** >= 20.0.0
+- **npm:** >= 9.0.0
 - **系统：** Windows / macOS / Linux
 
 ### 安装步骤

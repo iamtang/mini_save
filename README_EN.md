@@ -8,7 +8,7 @@
 ![GitHub license](https://img.shields.io/github/license/iamtang/mini_save)
 ![npm version](https://img.shields.io/npm/v/electron)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Node](https://img.shields.io/badge/node-%3E=14.0.0-brightgreen)
+![Node](https://img.shields.io/badge/node-%3E=20.0.0-brightgreen)
 
 **A lightweight, secure clipboard synchronization tool**
 
@@ -68,8 +68,8 @@ English | [简体中文](./README.md)
 
 ### Requirements
 
-- **Node.js:** >= 14.0.0
-- **npm:** >= 6.0.0
+- **Node.js:** >= 20.0.0
+- **npm:** >= 9.0.0
 - **System:** Windows / macOS / Linux
 
 ### Installation
