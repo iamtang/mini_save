@@ -1,8 +1,0 @@
-#root {
-  margin: 0 auto;
-}
-
-.app-container {
-  display: flex;
-  flex-direction: column;
-}

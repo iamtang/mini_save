@@ -1,117 +1,214 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>设置</title>
     <style>
-        body {
-            font-family: "Microsoft YaHei", Arial, sans-serif;
+        :root {
+            --primary-color: #2196f3;
+            --primary-light: #64b5f6;
+            --primary-dark: #1976d2;
+            --secondary-color: #ff4081;
+            --background-color: #fafafa;
+            --surface-color: #ffffff;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --border-color: #e0e0e0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             display: flex;
             flex-direction: column;
-            height: 100%;
-            background-color: rgb(229, 229, 229);
-        }
-
-        .tabs {
-            display: flex;
-            background-color: #e0e0e0;
-            border-bottom: 1px solid #d0d0d0;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 10px 15px;
-            text-align: center;
-            font-size: 14px;
-            cursor: pointer;
-            color: #666;
-        }
-
-        .tab.active {
-            background-color: white;
-            font-weight: bold;
-            color: #333;
-            border-bottom: 2px solid #0078d4;
+            height: 100vh;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .content {
             flex: 1;
-            padding: 20px 20px 0 20px;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            width: 100%;
+            max-width: 600px;
+            background: var(--surface-color);
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-content h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .form-group {
-            margin-bottom: 15px;
-            font-size: 14px;
+            margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
+            gap: 1rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
         }
 
         .form-group label {
-          display: block;
-          font-weight: 500;
-          color: #333;
-          width: 220px;
+            display: block;
+            font-weight: 500;
+            color: var(--text-secondary);
+            min-width: 140px;
+            font-size: 0.95rem;
         }
 
         .form-group input {
-            width: 100%;
-            padding: 4px 8px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            box-sizing: border-box;
-            color: #333;
-            background-color: #f9f9f9;
-            margin: 0 0 0 20px;
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            background-color: var(--background-color);
+            transition: all 0.2s ease;
+            outline: none;
         }
 
         .form-group input:focus {
-            outline: none;
-            border-color: #0078d4;
-            background-color: #fff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            background-color: var(--surface-color);
+        }
+
+        .form-group input::placeholder {
+            color: #bbb;
         }
 
         .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+            accent-color: var(--primary-color);
         }
 
         .buttons {
             display: flex;
-            justify-content: flex-end;
-            padding: 0 20px;
+            justify-content: center;
+            padding: 1.5rem 2rem 2rem;
+            background: var(--surface-color);
+            border-top: 1px solid var(--border-color);
         }
 
         button {
-            padding: 2px 16px;
-            font-size: 12px;
-            background-color: #fff;
-            color: #000;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            font-weight: 500;
+            background-color: var(--primary-color);
+            color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+            min-width: 100px;
         }
 
+        button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        button:active {
+            transform: translateY(0);
+            background-color: var(--primary-dark);
+        }
+
+ 
+        /* 响应式设计 */
+        @media (max-width: 600px) {
+            .content {
+                padding: 1rem;
+            }
+
+            .tab-content {
+                padding: 1.5rem;
+            }
+
+            .form-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .form-group label {
+                min-width: auto;
+                font-size: 0.875rem;
+            }
+
+            .buttons {
+                padding: 1rem;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        /* 添加输入框聚焦时的动画 */
+        @keyframes inputFocus {
+            0% {
+                box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.2);
+            }
+            100% {
+                box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            }
+        }
+
+        .form-group input:focus {
+            animation: inputFocus 0.2s ease;
+        }
     </style>
 </head>
 <body>
     <div class="content" id="content">
         <div id="general" class="tab-content">
+            <h2>通用设置</h2>
             <div class="form-group">
                 <label for="SERVER_ADDRESS">服务端地址</label>
                 <input type="text" id="SERVER_ADDRESS" placeholder="为空既为服务端">
             </div>
-            <!-- <div class="form-group">
-                <label for="PORT">端口</label>
-                <input type="number" id="PORT" value="3000">
-            </div> -->
             <div class="form-group">
                 <label for="CREDENTIAL">口令</label>
-                <input type="text" id="CREDENTIAL" maxlength="6" placeholder="请输入口令">
+                <input type="text" id="CREDENTIAL" maxlength="6" placeholder="请输入6位口令">
             </div>
             <div class="form-group">
                 <label for="MAX_TEXT_NUMBER">文本最大条数</label>
@@ -122,37 +219,18 @@
                 <input type="number" id="MAX_FILE_NUMBER" value="10" placeholder="默认：10">
             </div>
             <div class="form-group">
-                <label for="MAX_FILE_SIZE">文件最大SIZE(MB)</label>
+                <label for="MAX_FILE_SIZE">文件最大大小 (MB)</label>
                 <input type="number" id="MAX_FILE_SIZE" value="3" placeholder="默认：3">
             </div>
         </div>
     </div>
     <div class="buttons">
-        <button id="applyButton">应用</button>
+        <button id="applyButton">应用设置</button>
     </div>
 
     <script>
-        // const tabs = document.querySelectorAll('.tab');
-        // const tabContents = document.querySelectorAll('.tab-content');
-
-        // tabs.forEach(tab => {
-        //     tab.addEventListener('click', () => {
-        //         // Remove active class from all tabs
-        //         tabs.forEach(t => t.classList.remove('active'));
-        //         tab.classList.add('active');
-
-        //         // Hide all tab contents
-        //         tabContents.forEach(content => (content.style.display = 'none'));
-
-        //         // Show the selected tab content
-        //         const target = tab.getAttribute('data-tab');
-        //         document.getElementById(target).style.display = 'block';
-        //     });
-        // });
-
         window.electronAPI.loadSettings().then(settings => {
             document.getElementById('SERVER_ADDRESS').value = settings.SERVER_ADDRESS || '';
-            // document.getElementById('PORT').value = settings.PORT || 3000;
             document.getElementById('CREDENTIAL').value = settings.CREDENTIAL || '';
             document.getElementById('MAX_TEXT_NUMBER').value = settings.MAX_TEXT_NUMBER || '';
             document.getElementById('MAX_FILE_NUMBER').value = settings.MAX_FILE_NUMBER || '';
@@ -162,20 +240,29 @@
         document.getElementById('applyButton').addEventListener('click', () => {
             const settings = {
                 SERVER_ADDRESS: document.getElementById('SERVER_ADDRESS').value,
-                // PORT: document.getElementById('PORT').value,
                 CREDENTIAL: document.getElementById('CREDENTIAL').value,
                 MAX_TEXT_NUMBER: document.getElementById('MAX_TEXT_NUMBER').value,
                 MAX_FILE_NUMBER: document.getElementById('MAX_FILE_NUMBER').value,
                 MAX_FILE_SIZE: document.getElementById('MAX_FILE_SIZE').value,
             };
 
+            // 添加按钮点击反馈动画
+            const button = document.getElementById('applyButton');
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 100);
+
             // Send settings to the main process
             window.electronAPI.saveSettings(settings);
         });
+
         document.addEventListener('keydown', (event) => {
-           if (event.key === 'Escape') {
-              // Esc 取消
-              window.electronAPI.hideSettings(); // 通知主进程取消
+            if (event.key === 'Escape') {
+                window.electronAPI.hideSettings();
+            }
+            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                document.getElementById('applyButton').click();
             }
         });
     </script>

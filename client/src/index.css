@@ -482,22 +482,6 @@ textarea:focus {
   box-sizing: border-box;
 }
 
-.upload-button.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background-color: #ccc !important;
-  pointer-events: none;
-}
-
-.upload-button.disabled:hover {
-  background-color: #ccc !important;
-  transform: none;
-}
-
-.upload-button.disabled svg {
-  color: #666;
-}
-
 /* 移除刷新按钮原来的样式 */
 .header-actions {
   display: flex;

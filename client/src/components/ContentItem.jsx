@@ -1,4 +1,4 @@
-import { DeleteIcon, StarIcon } from './Icons'
+import { StarIcon } from './Icons'
 
 const ContentItem = ({ item, onCopy, onDelete, onStar, onDownload, escapeHtml, formatFileSize }) => {
   if ('content' in item) {
@@ -14,16 +14,6 @@ const ContentItem = ({ item, onCopy, onDelete, onStar, onDownload, escapeHtml, f
           <small>{new Date(item.timestamp).toLocaleString()}</small>
         </div>
         <div className='btns-box'>
-          {/* <button 
-            className="delete-button" 
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(item.id)
-            }}
-            title="删除"
-          >
-            <DeleteIcon />
-          </button> */}
           <button 
             className={item.star ? "star-button checked" : "star-button" }
             onClick={(e) => {

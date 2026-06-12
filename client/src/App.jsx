@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import OSS from 'ali-oss'
-import './App.css'
 import Login from './components/Login'
 import Header from './components/Header'
 import ContentSection from './components/ContentSection'
@@ -19,8 +18,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [text, setText] = useState('')
   const [contents, setContents] = useState({ texts: [], files: [] })
-  const [copyStatus, setCopyStatus] = useState('')
-  const [uploadProgress, setUploadProgress] = useState(null)
   const contentRef = useRef(null)
   const [uploadTasks, setUploadTasks] = useState(new Set())
   const [showCopyToast, message, showCopyMessage] = useToast(1500)
@@ -354,43 +351,25 @@ function App() {
   }
 
   const handleStarText = async (id) => {
-    try {
-      await fetch(`${API_URL}/api/star/text/${credential}/${id}`, {
-        method: 'PUT'
-      })
-      
-      // 只删除非上传中且 ID 匹配的文件
-      setContents(prev => ({
-        ...prev,
-        texts: prev.texts.map(item => {
-          if(item.id === id){
-            return { ...item, star: item.star ? 0 : 1}
-          }else{
-            return item
-          }
-        })
-      }))
-    } catch (error) {
-      console.error('Star error:', error)
-    }
+    await handleStar('text', id)
   }
 
   const handleStarFile = async (id) => {
+    await handleStar('file', id)
+  }
+
+  const handleStar = async (type, id) => {
     try {
-      await fetch(`${API_URL}/api/star/file/${credential}/${id}`, {
+      await fetch(`${API_URL}/api/star/${type}/${credential}/${id}`, {
         method: 'PUT'
       })
-      
-      // 只删除非上传中且 ID 匹配的文件
+
+      const key = type === 'text' ? 'texts' : 'files'
       setContents(prev => ({
         ...prev,
-        files: prev.files.map(item => {
-          if(item.id === id){
-            return { ...item, star: item.star ? 0 : 1}
-          }else{
-            return item
-          }
-        })
+        [key]: prev[key].map(item =>
+          item.id === id ? { ...item, star: item.star ? 0 : 1 } : item
+        )
       }))
     } catch (error) {
       console.error('Star error:', error)

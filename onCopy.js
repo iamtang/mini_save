@@ -12,6 +12,11 @@ let currentContent = null;
 global.rooms = new Map();
 let socket = null
 
+// 防止重复上传的缓存
+const uploadedFiles = new Set();
+let lastSyncTime = 0;
+const SYNC_COOLDOWN = 3000; // 同步后冷却3秒
+
 async function onCopy(server, config){
     if(!config.CREDENTIAL) return null
 	// 服务端
@@ -23,10 +28,20 @@ async function onCopy(server, config){
 	preContent = null;
 	currentContent = null;
 
+	// 定期清理上传文件缓存（5秒）
+	setInterval(() => {
+		uploadedFiles.clear();
+	}, 5000);
+
 	while(true){
 		await sleep(1000)
 		try {
 			if(config.isStop) continue;
+
+			// 如果在同步冷却期内，跳过检测
+			if (Date.now() - lastSyncTime < SYNC_COOLDOWN) {
+				continue;
+			}
 
 			// 使用 getClipboardContent 获取剪贴板内容
 			const { files: fileUrls, text: textContent } = getClipboardContent();
@@ -40,15 +55,31 @@ async function onCopy(server, config){
 			// 优先处理文件复制
 			if (fileUrls && fileUrls.length > 0) {
 				for (const filePath of fileUrls) {
-					// 跳过 downloads 目录中的文件（这些是同步下载的文件，不是用���复制的)
+					const fileName = path.basename(filePath);
+
+					// 跳过 downloads 目录中的文件（这些是同步下载的文件，不是用户复制的)
 					if (filePath.includes('downloads') || filePath.includes('/Library/Application Support')) {
 						log.info('跳过同步下载的文件:', filePath);
 						continue;
 					}
+
+					// 跳过 macOS 剪贴板临时文件路径
+					if (filePath.includes('shared-pasteboard/items')) {
+						log.info('跳过剪贴板临时文件:', fileName);
+						continue;
+					}
+
+					// 检查是否最近上传过同名文件（防止循环同步）
+					if (uploadedFiles.has(fileName)) {
+						log.info('跳过最近上传的文件:', fileName);
+						continue;
+					}
+
 					try {
 						const stats = fs.statSync(filePath);
 						if (stats.isFile() && stats.size <= 1024 * 1024 * config.MAX_FILE_SIZE) {
 							log.info('检测到文件复制:', filePath);
+							uploadedFiles.add(fileName); // 记录已上传的文件名
 							const res = await ossUpload(filePath, config);
 							socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}));
 						} else if (!stats.isFile()) {
@@ -91,11 +122,18 @@ function onMessage(msg, config){
         const downloadUrl = data.type === 'file' ? `${config.url}/api/download/${config.CREDENTIAL}/${data.data}` : data.data;
         downloadFile(downloadUrl, data.type === 'oss')
             .then((res) => {
+                const fileName = path.basename(res);
+
+                // 设置同步冷却时间，防止立即重新上传
+                lastSyncTime = Date.now();
+                // 记录文件名，防止循环同步
+                uploadedFiles.add(fileName);
+
                 // 使用与主循环相同的格式更新 preContent
                 preContent = JSON.stringify({ files: [`file://${res}`], text: null });
                 currentContent = preContent;
                 clipboard.writeBuffer('public.file-url', Buffer.from(`file://${res}`, 'utf-8'));
-                log.info('接收到同步文件');
+                log.info('接收到同步文件:', fileName);
             })
             .catch((error) => {
                 log.info('下载文件失败:', downloadUrl, error.message);
@@ -173,8 +211,8 @@ function initClientWss(config) {
 		reconnectClientWss(config); // 调用重连逻辑
 	};
 
-	return socket
-}
+		return socket
+	}
 
 
 module.exports = onCopy
