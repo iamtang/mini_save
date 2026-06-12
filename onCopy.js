@@ -42,6 +42,11 @@ async function onCopy(server, config){
 			// 优先处理文件复制
 			if (fileUrls && fileUrls.length > 0) {
 				for (const filePath of fileUrls) {
+					// 跳过 downloads 目录中的文件（这些是同步下载的文件，不是用���复制的)
+					if (filePath.includes('downloads') || filePath.includes('/Library/Application Support')) {
+						log.info('跳过同步下载的文件:', filePath);
+						continue;
+					}
 					try {
 						const stats = fs.statSync(filePath);
 						if (stats.isFile() && stats.size <= 1024 * 1024 * config.MAX_FILE_SIZE) {
