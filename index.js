@@ -88,6 +88,6 @@ app.on('window-all-closed', (event) => {
 });
 
 // 退出时关闭服务器
-app.on('quit', (e) => {
+app.on('before-quit', () => {
   stopServer();
 });

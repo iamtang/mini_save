@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
 const { downloadFile, uploadFile, ossInit, ossUpload, sleep, textUpload } = require('./utils.js')
+const { getClipboardContent } = require('./clipboard-macos.js')
 const log = require('electron-log/main');
 
 let preContent = null;
@@ -10,6 +11,7 @@ let currentContent = null;
 // 房间管理对象
 global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
 let socket = null
+
 async function onCopy(server, config){
 	log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 	log.initialize()
@@ -20,39 +22,61 @@ async function onCopy(server, config){
 	}
 	// 客户端
 	socket = initClientWss(config)
-	currentContent = clipboard.read('public.file-url') || clipboard.readText();
+	preContent = null;
+	currentContent = null;
+
 	while(true){
 		await sleep(1000)
 		try {
-			currentContent = clipboard.read('public.file-url') || clipboard.readText();
-			if(currentContent === preContent || config.isStop) continue;
-			if(clipboard.read('public.file-url')){
-				const filePath = decodeURIComponent(currentContent.replace('file://','').replace(/^localhost/,''));
-				const stats = fs.statSync(filePath);
-				if(stats.size > 1024 * 1024 * config.MAX_FILE_SIZE || !stats.isFile()){
-					continue
+			if(config.isStop) continue;
+
+			const { files: fileUrls, text: textContent } = getClipboardContent();
+			const contentHash = JSON.stringify({ files: fileUrls, text: textContent });
+
+			// 检查内容是否变化
+			if (contentHash === preContent) {
+				continue;
+			}
+
+			// 优先处理文件复制
+			if (fileUrls && fileUrls.length > 0) {
+				for (const filePath of fileUrls) {
+					try {
+						const stats = fs.statSync(filePath);
+						if (stats.isFile() && stats.size <= 1024 * 1024 * config.MAX_FILE_SIZE) {
+							log.info('检测到文件复制:', filePath);
+							const res = await ossUpload(filePath, config);
+							socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}));
+						} else if (!stats.isFile()) {
+							log.info('不是文件，跳过:', filePath);
+						} else {
+							log.info('文件过大，跳过:', filePath, '大小:', stats.size);
+						}
+					} catch (statError) {
+						log.info('无法访问文件:', filePath, statError.message);
+					}
 				}
-				const res = await ossUpload(filePath, config)
-				socket.send(JSON.stringify({type: res.id ? 'file' : 'oss', data: res.id || res.url}))
-				// console.log('===文件===')
-			}else if(currentContent){
-				let currentContent = clipboard.readText();
-				await textUpload(currentContent, config)
-				socket.send(JSON.stringify({type: 'text', data: currentContent}))
-				// log.info('===文本===')
+				preContent = contentHash;
+				currentContent = contentHash;
+			}
+			// 处理文本复制
+			else if (textContent && textContent.trim()) {
+				log.info('检测到文本复制:', textContent.substring(0, 50));
+				await textUpload(textContent, config);
+				socket.send(JSON.stringify({type: 'text', data: textContent}));
+				preContent = contentHash;
+				currentContent = contentHash;
 			}
 		} catch (error) {
-			log.info('onCopy error！', error)
+			log.info('onCopy error:', error)
 		}
-		
-		preContent = currentContent
 	};
 }
 
 function onMessage(msg, config){
     const data = JSON.parse(msg);
     // 口令不一致，无需同步
-    if(config.roomID !== config.CREDENTIAL && config.roomID || config.isStop) return;
+    if((config.roomID && config.roomID !== config.CREDENTIAL) || config.isStop) return;
     // data.type !== 'ping' && log.info(data, '=======')
     if (data.type === 'text') {
         currentContent = preContent = data.data
@@ -110,7 +134,7 @@ function initServerWss(server, config) {
 	}
 }
 
-function reConnentClientWss(config) {
+function reconnectClientWss(config) {
 	setTimeout(() => {
 		log.info('正在重连')
 		socket = initClientWss(config);
@@ -133,7 +157,7 @@ function initClientWss(config) {
 	};
 
 	socket.onclose = () => {
-		reConnentClientWss(config); // 调用重连逻辑
+		reconnectClientWss(config); // 调用重连逻辑
 	};
 
 	return socket

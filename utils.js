@@ -61,6 +61,7 @@ async function ossUpload(filePath, config){
 // 获取本机 IP 地址
 function getIPAddress() {
     const interfaces = os.networkInterfaces();
+    let ip = '';
     for (let dev in interfaces) {
       for (let details of interfaces[dev]) {
         if (details.family === 'IPv4' && !details.internal) {
@@ -69,7 +70,6 @@ function getIPAddress() {
           }
           ip = details.address
         }
-        
       }
     }
     return ip
@@ -77,22 +77,22 @@ function getIPAddress() {
 
 function rmFolder(folderPath) {
     if (!fs.existsSync(folderPath)) {
-      fs.mkdirSync(folderPath, { recursive: true });
+      return;
     }
     // 获取文件夹中的所有内容
     const files = fs.readdirSync(folderPath);
-  
+
     // 遍历每个文件/子文件夹
     files.forEach(file => {
         const currentPath = path.join(folderPath, file);
-    
+
         // 获取文件/目录的状态
         const stats = fs.statSync(currentPath);
-    
+
         if (stats.isDirectory()) {
             // 如果是目录，递归删除其中的文件
-            clearFolderContents(currentPath);
-    
+            rmFolder(currentPath);
+
             // 删除空目录
             fs.rmdirSync(currentPath);
         } else {

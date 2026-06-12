@@ -283,7 +283,7 @@ module.exports = ({
         if (!_oss || !ossConf || !sts) {
             return res.status(404).send("not found");
         }
-        if (credentials && new Date() < new Date(credentials.expiration)) {
+        if (credentials && Date.now() < new Date(credentials.expiration).getTime()) {
             return res.json(credentials);
         }
         const result = await sts.assumeRole(ossConf.roleArn, null, 3600);
@@ -446,13 +446,13 @@ module.exports = ({
                     // const extraFiles = storage_data[credential].files.slice(MAX_FILE_NUMBER);
                     // extraFiles.forEach(file => {
                     try {
-                        fs.unlinkSync(
-                            storage_data[credential].files[removeIndex]
-                                .systemPath
-                        ); // 删除文件系统中的文件
+                        const fileToRemove = storage_data[credential].files[removeIndex];
+                        if (fileToRemove.systemPath) {
+                            fs.unlinkSync(fileToRemove.systemPath);
+                        }
                     } catch (err) {
                         log.error(
-                            `Failed to delete file ${file.systemPath}:`,
+                            `Failed to delete file:`,
                             err
                         );
                     }
