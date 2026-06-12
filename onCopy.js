@@ -9,7 +9,7 @@ const log = require('electron-log/main');
 let preContent = null;
 let currentContent = null;
 // 房间管理对象
-global.rooms = new Map(); // 使用 Map 存储房间和客户端连接
+global.rooms = new Map();
 let socket = null
 
 async function onCopy(server, config){
@@ -30,6 +30,7 @@ async function onCopy(server, config){
 		try {
 			if(config.isStop) continue;
 
+			// 使用 getClipboardContent 获取剪贴板内容
 			const { files: fileUrls, text: textContent } = getClipboardContent();
 			const contentHash = JSON.stringify({ files: fileUrls, text: textContent });
 
@@ -77,15 +78,19 @@ function onMessage(msg, config){
     const data = JSON.parse(msg);
     // 口令不一致，无需同步
     if((config.roomID && config.roomID !== config.CREDENTIAL) || config.isStop) return;
-    // data.type !== 'ping' && log.info(data, '=======')
     if (data.type === 'text') {
         currentContent = preContent = data.data
         clipboard.writeText(currentContent)
     } else if ((data.type === 'file' || data.type === 'oss') && powerMonitor.getSystemIdleTime() < 300) {
-        downloadFile(data.type === 'file' ? `${config.url}/api/download/${config.CREDENTIAL}/${data.data}` : data.data, data.type === 'oss').then(async (res) => {
-            currentContent = preContent = `file://${res}`
-            clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
-        })
+        const downloadUrl = data.type === 'file' ? `${config.url}/api/download/${config.CREDENTIAL}/${data.data}` : data.data;
+        downloadFile(downloadUrl, data.type === 'oss')
+            .then((res) => {
+                currentContent = preContent = `file://${res}`;
+                clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
+            })
+            .catch((error) => {
+                log.info('下载文件失败:', downloadUrl, error.message);
+            });
     }
 }
 
@@ -102,7 +107,6 @@ function initServerWss(server, config) {
 		log.info('客户端连接成功', roomID);
 		// 监听客户端发送的消息
 		ws.on('message', (msg) => {
-            // onMessage(msg, { url, CREDENTIAL, roomID })
             // 同步给同口令的设备
             for (const client of rooms.get(roomID)) {
                 if (client !== ws && client.readyState === WebSocket.OPEN) {
