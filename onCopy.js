@@ -79,14 +79,20 @@ function onMessage(msg, config){
     // 口令不一致，无需同步
     if((config.roomID && config.roomID !== config.CREDENTIAL) || config.isStop) return;
     if (data.type === 'text') {
-        currentContent = preContent = data.data
-        clipboard.writeText(currentContent)
+        // 使用与主循环相同的格式更新 preContent，避免重复检测
+        preContent = JSON.stringify({ files: [], text: data.data });
+        currentContent = preContent;
+        clipboard.writeText(data.data);
+        log.info('接收到同步文本:', data.data.substring(0, 30));
     } else if ((data.type === 'file' || data.type === 'oss') && powerMonitor.getSystemIdleTime() < 300) {
         const downloadUrl = data.type === 'file' ? `${config.url}/api/download/${config.CREDENTIAL}/${data.data}` : data.data;
         downloadFile(downloadUrl, data.type === 'oss')
             .then((res) => {
-                currentContent = preContent = `file://${res}`;
-                clipboard.writeBuffer('public.file-url', Buffer.from(currentContent, 'utf-8'));
+                // 使用与主循环相同的格式更新 preContent
+                preContent = JSON.stringify({ files: [`file://${res}`], text: null });
+                currentContent = preContent;
+                clipboard.writeBuffer('public.file-url', Buffer.from(`file://${res}`, 'utf-8'));
+                log.info('接收到同步文件');
             })
             .catch((error) => {
                 log.info('下载文件失败:', downloadUrl, error.message);
