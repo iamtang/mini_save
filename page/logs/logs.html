@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志查看</title>
+    <style>
+        :root {
+            --primary-color: #2196f3;
+            --primary-light: #64b5f6;
+            --primary-dark: #1976d2;
+            --background-color: #1e1e1e;
+            --surface-color: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+            --info-color: #2196f3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        button.secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        select, input[type="text"] {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.8125rem;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding-left: 1.5rem;
+            width: 150px;
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 0.4rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            pointer-events: none;
+        }
+
+        .status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            padding: 0 1rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            padding: 0.25rem 1rem;
+            background-color: var(--background-color);
+        }
+
+        .log-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+            background-color: #0d0d0d;
+        }
+
+        .log-entry {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            border-left: 2px solid transparent;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-entry:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-left-color: var(--border-color);
+        }
+
+        .log-entry.error {
+            color: var(--error-color);
+            border-left-color: var(--error-color);
+            background-color: rgba(244, 67, 54, 0.05);
+        }
+
+        .log-entry.warn {
+            color: var(--warning-color);
+            border-left-color: var(--warning-color);
+            background-color: rgba(255, 152, 0, 0.05);
+        }
+
+        .log-entry.info {
+            color: var(--info-color);
+        }
+
+        .log-entry.success {
+            color: var(--success-color);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            gap: 1rem;
+        }
+
+        .empty-state::before {
+            content: '📭';
+            font-size: 2rem;
+        }
+
+        .highlight {
+            background-color: rgba(255, 235, 59, 0.3);
+            padding: 0 1px;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: var(--background-color);
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .auto-scroll {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .auto-scroll input {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>📋 系统日志</h1>
+            <div class="stats" id="stats"></div>
+        </div>
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索...">
+            </div>
+            <select id="lineCount">
+                <option value="50">50 行</option>
+                <option value="100" selected>100 行</option>
+                <option value="500">500 行</option>
+                <option value="1000">1000 行</option>
+                <option value="0">全部</option>
+            </select>
+            <div class="auto-scroll">
+                <input type="checkbox" id="autoScroll" checked>
+                <label for="autoScroll">自动滚动</label>
+            </div>
+            <button id="refreshBtn">🔄 刷新</button>
+            <button id="clearBtn" class="secondary">🗑️ 清空</button>
+            <button id="closeBtn" class="secondary">✕ 关闭</button>
+        </div>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="log-container" id="logContainer"></div>
+
+    <script>
+        const logContainer = document.getElementById('logContainer');
+        const statusEl = document.getElementById('status');
+        const statsEl = document.getElementById('stats');
+        const searchInput = document.getElementById('searchInput');
+        const lineCountSelect = document.getElementById('lineCount');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        const autoScrollCheckbox = document.getElementById('autoScroll');
+
+        let currentLogs = [];
+        let refreshInterval = null;
+
+        // 读取日志
+        async function readLogs() {
+            try {
+                setStatus('加载中...', 'loading');
+                const lineCount = parseInt(lineCountSelect.value);
+                const result = await window.electronAPI.readLogs({ lines: lineCount });
+
+                if (result.error) {
+                    setStatus(result.error, 'error');
+                    return;
+                }
+
+                if (result.logs && result.logs.length > 0) {
+                    currentLogs = result.logs;
+                    renderLogs(result.logs);
+                    updateStats(result.total, result.showing);
+                    setStatus('');
+                } else if (result.message) {
+                    showEmptyState(result.message);
+                    updateStats(0, 0);
+                } else {
+                    showEmptyState('暂无日志');
+                    updateStats(0, 0);
+                }
+            } catch (error) {
+                console.error('读取日志失败:', error);
+                setStatus('读取失败: ' + error.message, 'error');
+            }
+        }
+
+        // 渲染日志
+        function renderLogs(logs, searchTerm = '') {
+            if (logs.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            const html = logs.map(line => {
+                const className = getLogClassName(line);
+                const content = searchTerm
+                    ? highlightSearch(escapeHtml(line), searchTerm)
+                    : escapeHtml(line);
+                return `<div class="log-entry ${className}">${content}</div>`;
+            }).join('');
+
+            logContainer.innerHTML = html;
+
+            if (autoScrollCheckbox.checked) {
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        }
+
+        // 获取日志级别 CSS 类
+        function getLogClassName(line) {
+            const lower = line.toLowerCase();
+            if (lower.includes('[error]') || lower.includes('error:') || lower.includes('failed')) return 'error';
+            if (lower.includes('[warn]') || lower.includes('warning')) return 'warn';
+            if (lower.includes('[info]') || lower.includes('log:')) return 'info';
+            if (lower.includes('success') || lower.includes('完成') || lower.includes('成功')) return 'success';
+            return '';
+        }
+
+        // 转义 HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 高亮搜索
+        function highlightSearch(text, searchTerm) {
+            if (!searchTerm) return text;
+            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        // 显示空状态
+        function showEmptyState(message = '暂无日志') {
+            logContainer.innerHTML = `<div class="empty-state">${message}</div>`;
+        }
+
+        // 设置状态
+        function setStatus(message, type = '') {
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+        }
+
+        // 更新统计
+        function updateStats(total, showing) {
+            statsEl.innerHTML = `
+                <span>📊 总计: ${total}</span>
+                <span>👁️ 显示: ${showing}</span>
+            `;
+        }
+
+        // 搜索
+        function searchLogs() {
+            const term = searchInput.value.trim().toLowerCase();
+            if (!term) {
+                renderLogs(currentLogs);
+                updateStats(currentLogs.length, currentLogs.length);
+                return;
+            }
+
+            const filtered = currentLogs.filter(line =>
+                line.toLowerCase().includes(term)
+            );
+
+            if (filtered.length === 0) {
+                logContainer.innerHTML = '<div class="empty-state">没有找到匹配的日志</div>';
+            } else {
+                renderLogs(filtered, term);
+            }
+
+            updateStats(currentLogs.length, filtered.length);
+        }
+
+        // 清空日志
+        async function clearLogs() {
+            try {
+                const result = await window.electronAPI.clearLogs();
+                if (result.success) {
+                    readLogs();
+                }
+            } catch (error) {
+                console.error('清空日志失败:', error);
+            }
+        }
+
+        // 关闭窗口
+        function closeWindow() {
+            window.electronAPI.hideLogs();
+        }
+
+        // 事件监听
+        refreshBtn.addEventListener('click', readLogs);
+        clearBtn.addEventListener('click', clearLogs);
+        closeBtn.addEventListener('click', closeWindow);
+        lineCountSelect.addEventListener('change', readLogs);
+        searchInput.addEventListener('input', debounce(searchLogs, 200));
+
+        // 初始加载
+        readLogs();
+
+        // 自动刷新（每3秒）
+        refreshInterval = setInterval(readLogs, 3000);
+
+        // 防抖
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // 页面卸载
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+        });
+
+        // 快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeWindow();
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                readLogs();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

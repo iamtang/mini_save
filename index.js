@@ -73,8 +73,15 @@ app.whenReady().then(() => {
       {
         label: '设置',
         click: () => {
-          const createSettingWindow = require('./page/setting/setting.js'); 
+          const createSettingWindow = require('./page/setting/setting.js');
           createSettingWindow();
+        }
+      },
+      {
+        label: '日志',
+        click: () => {
+          const createLogsWindow = require('./page/logs/logs.js');
+          createLogsWindow();
         }
       },
       {
