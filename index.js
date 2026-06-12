@@ -1,10 +1,17 @@
 const { app, Tray, Menu, shell } =  require('electron');
 const path =  require('path');
 const fs =  require('fs');
+
+const userDataPath = app.getPath('userData');
+const log = require('electron-log/main');
 const onCopy = require('./onCopy.js')
 const Server = require('./server.js');
 
-const userDataPath = app.getPath('userData');
+// ���置日志文件最大为 5MB
+log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
+log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
+log.initialize()
+
 let server = null
 
 // 启动服务器

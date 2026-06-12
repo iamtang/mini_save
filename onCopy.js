@@ -13,8 +13,6 @@ global.rooms = new Map();
 let socket = null
 
 async function onCopy(server, config){
-	log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
-	log.initialize()
     if(!config.CREDENTIAL) return null
 	// 服务端
 	if(config.isServer){
