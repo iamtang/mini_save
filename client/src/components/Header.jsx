@@ -23,7 +23,7 @@ const Header = ({ credential, onLogout }) => {
           onDoubleClick={() => showCredential(`当前凭证：${credential}`)}
           onTouchStart={handleTouchStart}
         >
-          迷你保存
+          迷你保存222
         </h1>
         <button 
           className="logout-button" 

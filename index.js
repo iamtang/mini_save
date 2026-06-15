@@ -1,13 +1,14 @@
 const { app, Tray, Menu, shell } =  require('electron');
 const path =  require('path');
-const fs =  require('fs');
+const fs = require('fs');
 
 const userDataPath = app.getPath('userData');
 const log = require('electron-log/main');
 const onCopy = require('./onCopy.js')
 const Server = require('./server.js');
+const { startAutoUpdate } = require('./update.js');
 
-// ���置日志文件最大为 5MB
+// 配置日志文件最大为 5MB
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
 log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
 log.initialize()
@@ -48,6 +49,10 @@ app.whenReady().then(() => {
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
+
+  // 启动时检查一次更新
+  startAutoUpdate();
+
   // 创建托盘菜单
   const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
   // tray = new Tray(path.join(process.resourcesPath, 'icon.png')); // 替换为你的图标路径
@@ -86,7 +91,9 @@ app.whenReady().then(() => {
       },
       {
         label: '退出',
-        click: () => app.quit()
+        click: () => {
+          app.quit();
+        }
       }
     ]);
   };
