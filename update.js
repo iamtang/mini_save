@@ -3,8 +3,8 @@
  *
  * 功能：
  * 1. 检查 GitHub Releases 最新版本
- * 2. 下载更新包 (zip)
- * 3. 解压并替换文件
+ * 2. 下载 app.asar 文件
+ * 3. 替换本地 app.asar 文件
  * 4. 提示用户重启应用
  */
 
@@ -15,9 +15,23 @@ const { execSync } = require('child_process');
 const { app } = require('electron');
 const log = require('electron-log');
 
-const GITHUB_RAW = 'https://raw.githubusercontent.com';
-const REPO_OWNER = 'iamtang';
-const REPO_NAME = 'mini_save';
+// 从 package.json 读取发布配置
+function getPublishConfig() {
+  const pkgPath = path.join(__dirname, 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+
+  const publish = pkg.build?.publish || {};
+  const owner = publish.owner || pkg.author;
+  const repo = publish.repo || pkg.name;
+
+  return {
+    GITHUB_RAW: 'https://raw.githubusercontent.com',
+    REPO_OWNER: owner,
+    REPO_NAME: repo
+  };
+}
+
+const { GITHUB_RAW, REPO_OWNER, REPO_NAME } = getPublishConfig();
 
 // 更新包下载位置
 const UPDATE_DIR = path.join(app.getPath('userData'), 'updates');
@@ -42,6 +56,18 @@ function getCurrentVersion() {
   } catch (e) {
     log.error('读取当前版本失败:', e);
     return '0.0.0';
+  }
+}
+
+async function moveFileWithMv(sourcePath, destPath) {
+  try {
+    // 基本移动
+    await execSync(`mv "${sourcePath}" "${destPath}"`);
+    log.info(`文件移动成功: mv "${sourcePath}" "${destPath}"`);
+    return true;
+  } catch (error) {
+    log.error(`文件移动失败: ${error.message}`);
+    return false;
   }
 }
 
@@ -70,7 +96,7 @@ async function getLatestRelease(retries = 3) {
           version,
           tagName: `v${version}`,
           name: `版本 ${version}`,
-          downloadUrl: `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/update-${version}.zip`,
+          downloadUrl: `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/app.asar`,
           size: 0,
           isPrerelease: version.includes('-')
         };
@@ -168,7 +194,7 @@ async function checkForUpdates(options = {}) {
 }
 
 /**
- * 下载更新包
+ * 下载更新包 (app.asar)
  */
 async function downloadUpdate(downloadUrl, onProgress) {
   // 确保更新目录存在
@@ -176,10 +202,10 @@ async function downloadUpdate(downloadUrl, onProgress) {
     fs.mkdirSync(UPDATE_DIR, { recursive: true });
   }
 
-  const zipPath = path.join(UPDATE_DIR, 'update.zip');
-  const tempPath = zipPath + '.tmp';
+  const asarPath = path.join(UPDATE_DIR, 'app.asar');
+  const tempPath = asarPath + '.tmp';
 
-  log.info('开始下载更新包...');
+  log.info('开始下载 app.asar...');
 
   try {
     const response = await axios({
@@ -205,9 +231,9 @@ async function downloadUpdate(downloadUrl, onProgress) {
     return new Promise((resolve, reject) => {
       writer.on('finish', () => {
         writer.close();
-        fs.renameSync(tempPath, zipPath);
+        fs.renameSync(tempPath, asarPath);
         log.info('下载完成');
-        resolve(zipPath);
+        resolve(asarPath);
       });
 
       writer.on('error', (error) => {
@@ -231,26 +257,27 @@ async function downloadUpdate(downloadUrl, onProgress) {
 }
 
 /**
- * 解压 zip 文件
+ * 获取当前 app.asar 的路径
  */
-async function extractZip(zipPath) {
-  const appDir = __dirname;
-
-  log.info('开始解压更新包...');
-
-  try {
-    execSync(
-      `unzip -o -q "${zipPath}" -d "${appDir}"`,
-      { stdio: 'inherit' }
-    );
-
-    log.info('解压完成');
-  } catch (error) {
-    if (error.message.includes('not found') || error.code === 127) {
-      throw new Error('系统未安装 unzip 命令，请先安装: brew install unzip');
-    }
-    throw error;
+function getCurrentAppAsarPath() {
+  // 在打包后的应用中，process.resourcesPath 指向 Resources 目录
+  if (process.resourcesPath) {
+    return path.join(process.resourcesPath, 'app.asar');
   }
+
+  // 开发环境中没有 app.asar，返回 null
+  log.warn('当前是开发环境，没有 app.asar 文件');
+  return null;
+}
+
+/**
+ * 替换 app.asar 文件
+ */
+async function replaceAppAsar(downloadedAsarPath) {
+  const currentAsarPath = getCurrentAppAsarPath();
+  log.info('开始替换app.asar', downloadedAsarPath, currentAsarPath)
+  await moveFileWithMv(downloadedAsarPath, currentAsarPath)
+  log.info('替换app.asar成功')
 }
 
 /**
@@ -269,8 +296,8 @@ async function applyUpdate(options = {}) {
       return { success: false, message: updateInfo.message || '没有可用更新' };
     }
 
-    // 2. 下载更新包
-    const zipPath = await downloadUpdate(updateInfo.downloadUrl, (downloaded, total) => {
+    // 2. 下载 app.asar
+    const asarPath = await downloadUpdate(updateInfo.downloadUrl, (downloaded, total) => {
       const progress = Math.round((downloaded / total) * 100);
       log.info(`下载进度: ${progress}%`);
       if (onProgress) {
@@ -278,20 +305,19 @@ async function applyUpdate(options = {}) {
       }
     });
 
-    // 3. 解压更新
+    // 3. 替换 app.asar
     if (onProgress) {
-      onProgress({ stage: 'extracting', progress: 0 });
+      onProgress({ stage: 'replacing', progress: 0 });
     }
-
-    await extractZip(zipPath);
+    
+    await replaceAppAsar(asarPath);
 
     // 4. 清理下载文件
     try {
-      fs.unlinkSync(zipPath);
+      fs.unlinkSync(asarPath);
     } catch (e) {
       log.warn('清理下载文件失败:', e);
     }
-
 
     log.info('更新完成');
 
@@ -327,9 +353,9 @@ async function performUpdate() {
     const result = await applyUpdate({
       onProgress: (progress) => {
         if (progress.stage === 'downloading') {
-          log.info(`下载更新包: ${progress.progress}%`);
-        } else if (progress.stage === 'extracting') {
-          log.info('解压更新包...');
+          log.info(`下载 app.asar: ${progress.progress}%`);
+        } else if (progress.stage === 'replacing') {
+          log.info('替换 app.asar...');
         }
       }
     });

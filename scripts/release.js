@@ -6,7 +6,7 @@
  * node scripts/release.js 1.3.0
  *
  * 会自动：
- * 1. 打包 dist 和 page 目录为 zip
+ * 1. 上传 app.asar 文件
  * 2. 生成 version.json
  * 3. 创建 GitHub Release
  * 4. 上传更新包
@@ -15,18 +15,34 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const https = require('https');
+const axios = require('axios');
 
-const GITHUB_API = 'https://api.github.com';
-const REPO_OWNER = 'iamtang';
-const REPO_NAME = 'mini_save';
-
-// 从 package.json 读取打包配置
-function getPackageFiles() {
+// 从 package.json 读取发布配置
+function getPublishConfig() {
   const pkgPath = path.join(__dirname, '..', 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-  return pkg.build?.files || [];
+
+  const publish = pkg.build?.publish || {};
+  const owner = publish.owner || pkg.author;
+  const repo = publish.repo || pkg.name;
+
+  return {
+    GITHUB_API: 'https://api.github.com',
+    REPO_OWNER: owner,
+    REPO_NAME: repo
+  };
 }
+
+const { GITHUB_API, REPO_OWNER, REPO_NAME } = getPublishConfig();
+
+// 创建 axios 实例
+const githubApi = axios.create({
+  baseURL: GITHUB_API,
+  headers: {
+    'Accept': 'application/vnd.github.v3+json',
+    'User-Agent': 'mini-save-release'
+  }
+});
 
 // 从参数或 package.json 获取版本
 function getVersion() {
@@ -51,52 +67,61 @@ function validateVersion(version) {
   return version;
 }
 
-// 打包指定文件为 zip
-function createZip(version) {
-  console.log('📦 打包更新文件...');
+// 获取 app.asar 文件路径
+function getAppAsarPath() {
+  const pkgPath = path.join(__dirname, '..', 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
 
-  const outputDir = path.join(__dirname, '..', 'release');
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
+  const build = pkg.build || {};
+  const productName = build.productName || pkg.name;
+  const outputDir = build.directories?.output || 'build-output';
+
+  // 获取当前平台
+  const platform = process.platform;
+  const arch = process.arch;
+
+  let platformDir;
+  if (platform === 'darwin') {
+    platformDir = arch === 'arm64' ? 'mac-arm64' : 'mac';
+  } else if (platform === 'win32') {
+    platformDir = 'win-unpacked';
+  } else {
+    platformDir = 'linux-unpacked';
   }
 
-  const zipFileName = `update-${version}.zip`;
-  const zipPath = path.join(outputDir, zipFileName);
+  const asarPath = path.join(__dirname, '..', outputDir, platformDir, `${productName}.app`, 'Contents', 'Resources', 'app.asar');
 
-  try {
-    const sourceDir = path.join(__dirname, '..');
-    const files = getPackageFiles();
-
-    console.log('打包文件:', files.join(', '));
-
-    // 构建 zip 命令，只打包指定的文件
-    const fileArgs = files.join(' ');
-    execSync(
-      `cd "${sourceDir}" && zip -r "${zipPath}" ${fileArgs} -x "*.DS_Store"`,
-      { stdio: 'inherit' }
-    );
-  } catch (error) {
-    console.error('❌ 打包失败');
+  if (!fs.existsSync(asarPath)) {
+    console.error(`❌ app.asar 文件不存在: ${asarPath}`);
+    console.log('请先构建应用：npm run package');
     process.exit(1);
   }
 
-  const zipSize = fs.statSync(zipPath).size;
-  console.log(`✅ 打包完成: ${(zipSize / 1024 / 1024).toFixed(2)} MB`);
-  return zipPath;
+  return asarPath;
+}
+
+// 直接使用 app.asar 文件
+function prepareAsarFile(version) {
+  console.log('📦 准备 app.asar 文件...');
+
+  const asarPath = getAppAsarPath();
+  const asarSize = fs.statSync(asarPath).size;
+  console.log(`✅ app.asar 文件: ${(asarSize / 1024 / 1024).toFixed(2)} MB`);
+  return asarPath;
 }
 
 // 生成 version.json（本地备份，可选）
-function createVersionJson(version, zipSize) {
+function createVersionJson(version, asarSize) {
   console.log('📝 生成本地版本备份...');
 
   const versionInfo = {
     version,
     releaseDate: new Date().toISOString(),
     files: {
-      updateZip: {
-        url: `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/update-${version}.zip`,
-        size: zipSize,
-        contentType: 'application/zip'
+      appAsar: {
+        url: `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/app.asar`,
+        size: asarSize,
+        contentType: 'application/octet-stream'
       }
     }
   };
@@ -138,19 +163,19 @@ function getGitHubToken() {
 
 // 检查 Release 是否已存在
 async function checkReleaseExists(tag, token) {
-  return new Promise((resolve, reject) => {
-    const url = `${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${tag}`;
-
-    https.get(url, {
+  try {
+    await githubApi.get(`/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${tag}`, {
       headers: {
-        'User-Agent': 'mini-save-release',
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Authorization': `token ${token}`
       }
-    }, (response) => {
-      resolve(response.statusCode === 200);
-    }).on('error', reject);
-  });
+    });
+    return true;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return false;
+    }
+    throw error;
+  }
 }
 
 // 创建 GitHub Release
@@ -173,35 +198,18 @@ async function createRelease(version, versionInfo, token) {
     prerelease: version.includes('-') // 带 - 的版本视为预发布版本
   };
 
-  return new Promise((resolve, reject) => {
-    const url = `${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}/releases`;
-
-    const req = https.request(url, {
-      method: 'POST',
+  try {
+    const response = await githubApi.post(`/repos/${REPO_OWNER}/${REPO_NAME}/releases`, releaseData, {
       headers: {
-        'User-Agent': 'mini-save-release',
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
+        'Authorization': `token ${token}`
       }
-    }, (response) => {
-      let data = '';
-      response.on('data', chunk => data += chunk);
-      response.on('end', () => {
-        if (response.statusCode === 201) {
-          const result = JSON.parse(data);
-          console.log(`✅ Release 创建成功: ${result.html_url}`);
-          resolve({ exists: false, uploadUrl: result.upload_url, release: result });
-        } else {
-          reject(new Error(`创建 Release 失败: ${response.statusCode} - ${data}`));
-        }
-      });
     });
 
-    req.on('error', reject);
-    req.write(JSON.stringify(releaseData));
-    req.end();
-  });
+    console.log(`✅ Release 创建成功: ${response.data.html_url}`);
+    return { exists: false, uploadUrl: response.data.upload_url, release: response.data };
+  } catch (error) {
+    throw new Error(`创建 Release 失败: ${error.response?.status} - ${error.response?.data?.message || error.message}`);
+  }
 }
 
 // 上传文件到 Release
@@ -214,32 +222,17 @@ async function uploadToRelease(uploadUrl, filePath, token) {
   // 解析 upload_url，去掉 {？name} 参数
   const uploadApiUrl = uploadUrl.replace('{?name,label}', `?name=${fileName}`);
 
-  return new Promise((resolve, reject) => {
-    const req = https.request(uploadApiUrl, {
-      method: 'POST',
+  try {
+    await axios.put(uploadApiUrl, fileContent, {
       headers: {
-        'User-Agent': 'mini-save-release',
         'Authorization': `token ${token}`,
-        'Content-Type': 'application/zip',
-        'Content-Length': fileContent.length
+        'Content-Type': 'application/octet-stream'
       }
-    }, (response) => {
-      let data = '';
-      response.on('data', chunk => data += chunk);
-      response.on('end', () => {
-        if (response.statusCode === 201) {
-          console.log(`✅ 上传成功`);
-          resolve(JSON.parse(data));
-        } else {
-          reject(new Error(`上传失败: ${response.statusCode} - ${data}`));
-        }
-      });
     });
-
-    req.on('error', reject);
-    req.write(fileContent);
-    req.end();
-  });
+    console.log(`✅ 上传成功`);
+  } catch (error) {
+    throw new Error(`上传失败: ${error.response?.status} - ${error.response?.data || error.message}`);
+  }
 }
 
 // 生成 Release Notes
@@ -247,10 +240,10 @@ function generateReleaseNotes(version) {
   return `# 迷你保存 v${version}
 
 ## 更新内容
-- 更新 dist 和 page 文件
+- 更新 app.asar 文件
 
 ## 下载
-- [update-${version}.zip](https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/update-${version}.zip)
+- [app.asar](https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/app.asar)
 
 ## 安装
 应用会在启动时自动检查更新，或等待下次自动更新检查。
@@ -268,13 +261,13 @@ async function main() {
     const version = validateVersion(getVersion());
     console.log(`📌 版本: ${version}\n`);
 
-    // 2. 打包
-    const zipPath = createZip(version);
-    const zipSize = fs.statSync(zipPath).size;
-    console.log(`   文件大小: ${(zipSize / 1024 / 1024).toFixed(2)} MB\n`);
+    // 2. 准备 app.asar 文件
+    const asarPath = prepareAsarFile(version);
+    const asarSize = fs.statSync(asarPath).size;
+    console.log(`   文件大小: ${(asarSize / 1024 / 1024).toFixed(2)} MB\n`);
 
     // 3. 生成版本信息
-    const versionInfo = createVersionJson(version, zipSize);
+    const versionInfo = createVersionJson(version, asarSize);
 
     // 4. 获取 Token
     const token = getGitHubToken();
@@ -284,7 +277,7 @@ async function main() {
 
     if (!releaseResult.exists) {
       // 6. 上传文件
-      await uploadToRelease(releaseResult.uploadUrl, zipPath, token);
+      await uploadToRelease(releaseResult.uploadUrl, asarPath, token);
 
       console.log('\n================================================');
       console.log('✅ 发布完成!');
@@ -306,4 +299,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { createZip, createVersionJson };
+module.exports = { prepareAsarFile, createVersionJson };
