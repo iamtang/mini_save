@@ -103,7 +103,7 @@ async function onCopy(server, config){
 				currentContent = contentHash;
 			}
 		} catch (error) {
-			log.info('onCopy error:', error)
+			log.info('onCopy error:', error.toString())
 		}
 	};
 }

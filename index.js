@@ -46,12 +46,13 @@ app.whenReady().then(() => {
   config.isServer = !config.SERVER_ADDRESS
   config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `http://localhost:3000`
   config.userDataPath = userDataPath
+  // 启动时检查一次更新
+  startAutoUpdate();
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
 
-  // 启动时检查一次更新
-  startAutoUpdate();
+  
 
   // 创建托盘菜单
   const tray = new Tray(path.join(__dirname, 'icons/icon2.png')); // 替换为你的图标路径
