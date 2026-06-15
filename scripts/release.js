@@ -21,6 +21,21 @@ const GITHUB_API = 'https://api.github.com';
 const REPO_OWNER = 'iamtang';
 const REPO_NAME = 'mini_save';
 
+// 打包时排除的文件/目录
+const EXCLUDE_PATTERNS = [
+  '*.DS_Store',
+  '.git/*',
+  '.github/*',
+  'node_modules/*',
+  'release/*',
+  'build-output/*',
+  '*.log',
+  '.oss.json',
+  'scripts/*',
+  'UPDATE_GUIDE.md',
+  'client/*'
+];
+
 // 从参数或 package.json 获取版本
 function getVersion() {
   const args = process.argv.slice(2);
@@ -44,9 +59,9 @@ function validateVersion(version) {
   return version;
 }
 
-// 打包目录为 zip
+// 打包整个项目为 zip
 function createZip(version) {
-  console.log('📦 打包更新文件...');
+  console.log('📦 打包整个项目...');
 
   const outputDir = path.join(__dirname, '..', 'release');
   if (!fs.existsSync(outputDir)) {
@@ -56,20 +71,24 @@ function createZip(version) {
   const zipFileName = `update-${version}.zip`;
   const zipPath = path.join(outputDir, zipFileName);
 
-  // 检查是否安装了 zip 命令（macOS/Linux）
   try {
-    // 使用 zip 命令打包
     const sourceDir = path.join(__dirname, '..');
+
+    // 构建 exclude 参数
+    const excludeArgs = EXCLUDE_PATTERNS.map(p => `-x "${p}"`).join(' ');
+
+    // 打包整个项目
     execSync(
-      `cd "${sourceDir}" && zip -r "${zipPath}" dist/ page/ -x "*.DS_Store" "*.git*"`,
+      `cd "${sourceDir}" && zip -r "${zipPath}" . ${excludeArgs}`,
       { stdio: 'inherit' }
     );
   } catch (error) {
-    console.error('❌ 打包失败，请确保系统已安装 zip 命令');
+    console.error('❌ 打包失败');
     process.exit(1);
   }
 
-  console.log(`✅ 打包完成: ${zipPath}`);
+  const zipSize = fs.statSync(zipPath).size;
+  console.log(`✅ 打包完成: ${(zipSize / 1024 / 1024).toFixed(2)} MB`);
   return zipPath;
 }
 

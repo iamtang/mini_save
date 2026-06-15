@@ -36,7 +36,8 @@
     "asar": false,
     "compression": "maximum",
     "extraResources": [
-      "client/**/*"
+      "client/**/*",
+      "release/**/*"
     ],
     "win": {
       "icon": "icons/logo.ico"

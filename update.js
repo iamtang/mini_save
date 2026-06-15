@@ -292,16 +292,6 @@ async function applyUpdate(options = {}) {
       log.warn('清理下载文件失败:', e);
     }
 
-    // 5. 更新本地 package.json 版本号
-    try {
-      const pkgPath = path.join(__dirname, 'package.json');
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      pkg.version = updateInfo.latestVersion;
-      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-      log.info(`本地版本号已更新: ${updateInfo.latestVersion}`);
-    } catch (e) {
-      log.warn('更新本地版本号失败:', e);
-    }
 
     log.info('更新完成');
 
