@@ -68,7 +68,7 @@ app.whenReady().then(() => {
         }
       },
       {
-        label: '打开网址',
+        label: '打开',
         click: () => shell.openExternal(config.url)
       },
       {

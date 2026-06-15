@@ -1,6 +1,6 @@
 {
   "name": "mini_save",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "迷你保存",
   "main": "index.js",
   "scripts": {
@@ -35,9 +35,19 @@
     "productName": "迷你保存",
     "asar": false,
     "compression": "maximum",
-    "extraResources": [
-      "client/**/*",
-      "release/**/*"
+    "files": [
+      "dist/**/*",
+      "page/**/*",
+      "icons/**/*",
+      "index.js",
+      "main.js",
+      "server.js",
+      "onCopy.js",
+      "update.js",
+      "utils.js",
+      "clipboard-macos.js",
+      "config.json",
+      "package.json"
     ],
     "win": {
       "icon": "icons/logo.ico"

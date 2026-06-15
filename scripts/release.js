@@ -21,20 +21,12 @@ const GITHUB_API = 'https://api.github.com';
 const REPO_OWNER = 'iamtang';
 const REPO_NAME = 'mini_save';
 
-// 打包时排除的文件/目录
-const EXCLUDE_PATTERNS = [
-  '*.DS_Store',
-  '.git/*',
-  '.github/*',
-  'node_modules/*',
-  'release/*',
-  'build-output/*',
-  '*.log',
-  '.oss.json',
-  'scripts/*',
-  'UPDATE_GUIDE.md',
-  'client/*'
-];
+// 从 package.json 读取打包配置
+function getPackageFiles() {
+  const pkgPath = path.join(__dirname, '..', 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  return pkg.build?.files || [];
+}
 
 // 从参数或 package.json 获取版本
 function getVersion() {
@@ -59,9 +51,9 @@ function validateVersion(version) {
   return version;
 }
 
-// 打包整个项目为 zip
+// 打包指定文件为 zip
 function createZip(version) {
-  console.log('📦 打包整个项目...');
+  console.log('📦 打包更新文件...');
 
   const outputDir = path.join(__dirname, '..', 'release');
   if (!fs.existsSync(outputDir)) {
@@ -73,13 +65,14 @@ function createZip(version) {
 
   try {
     const sourceDir = path.join(__dirname, '..');
+    const files = getPackageFiles();
 
-    // 构建 exclude 参数
-    const excludeArgs = EXCLUDE_PATTERNS.map(p => `-x "${p}"`).join(' ');
+    console.log('打包文件:', files.join(', '));
 
-    // 打包整个项目
+    // 构建 zip 命令，只打包指定的文件
+    const fileArgs = files.join(' ');
     execSync(
-      `cd "${sourceDir}" && zip -r "${zipPath}" . ${excludeArgs}`,
+      `cd "${sourceDir}" && zip -r "${zipPath}" ${fileArgs} -x "*.DS_Store"`,
       { stdio: 'inherit' }
     );
   } catch (error) {
