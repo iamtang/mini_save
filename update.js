@@ -312,13 +312,6 @@ async function applyUpdate(options = {}) {
     
     await replaceAppAsar(asarPath);
 
-    // 4. 清理下载文件
-    try {
-      fs.unlinkSync(asarPath);
-    } catch (e) {
-      log.warn('清理下载文件失败:', e);
-    }
-
     log.info('更新完成');
 
     if (onProgress) {
