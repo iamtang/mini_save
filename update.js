@@ -61,9 +61,10 @@ function getCurrentVersion() {
 
 async function moveFileWithMv(sourcePath, destPath) {
   try {
-    // 基本移动
-    await execSync(`mv "${sourcePath}" "${destPath}"`);
-    log.info(`文件移动成功: mv "${sourcePath}" "${destPath}"`);
+    // Windows 使用 move，Unix 使用 mv
+    const command = process.platform === 'win32' ? 'move' : 'mv';
+    await execSync(`${command} "${sourcePath}" "${destPath}"`, { stdio: 'ignore' });
+    log.info(`文件移动成功: ${sourcePath} -> ${destPath}`);
     return true;
   } catch (error) {
     log.error(`文件移动失败: ${error.message}`);
@@ -374,15 +375,7 @@ function startAutoUpdate() {
   log.info('启动时检查更新...');
 
   setTimeout(async () => {
-    try {
-      const updateInfo = await checkForUpdates({ silent: true });
-      if (updateInfo.hasUpdates) {
-        log.info('发现新版本，开始自动更新...');
-        await performUpdate();
-      }
-    } catch (error) {
-      log.warn('检查更新失败:', error.message);
-    }
+    await performUpdate();
   }, 10000);
 }
 
