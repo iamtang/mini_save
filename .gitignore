@@ -14,5 +14,5 @@ out
 build-output
 .vscode
 userData
-
+release/
 .oss.json
