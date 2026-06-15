@@ -4,7 +4,7 @@
   "description": "迷你保存",
   "main": "index.js",
   "scripts": {
-    "dev": "electron .",
+    "dev": "chcp 65001 && electron .",
     "start": "electron-builder --dir",
     "publish": "electron-builder --publish always",
     "clean": "electron-builder --clear-cache",
@@ -27,7 +27,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "electron": "^34.0.0",
+    "electron": "^34.5.8",
     "electron-builder": "^25.1.8"
   },
   "build": {
