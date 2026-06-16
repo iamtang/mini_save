@@ -1,7 +1,7 @@
 const { app, Tray, Menu, shell } =  require('electron');
 const path =  require('path');
 const fs = require('fs');
-
+const {default: isDev} = require('electron-is-dev');
 const userDataPath = app.getPath('userData');
 const log = require('electron-log/main');
 const onCopy = require('./onCopy.js')
@@ -47,8 +47,10 @@ app.whenReady().then(() => {
   config.isServer = !config.SERVER_ADDRESS
   config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `http://localhost:3000`
   config.userDataPath = userDataPath
-  // 启动时检查一次更新
-  updater.startAutoUpdate();
+  // 启动时检查一次更新（仅在非开发环境）
+  if (!isDev) {
+    updater.startAutoUpdate();
+  }
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
