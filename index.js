@@ -1,12 +1,15 @@
 const { app, Tray, Menu, shell } =  require('electron');
 const path =  require('path');
 const fs = require('fs');
-
 const userDataPath = app.getPath('userData');
 const log = require('electron-log/main');
 const onCopy = require('./onCopy.js')
 const Server = require('./server.js');
-const { startAutoUpdate } = require('./update.js');
+const ElectronUpdater = require('./lib/electron-updater.js');
+const updater = new ElectronUpdater();
+
+// 检测是否是开发环境（app.isPackaged 在打包后为 true）
+const isPackaged = app.isPackaged;
 
 // 配置日志文件最大为 5MB
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
@@ -46,8 +49,8 @@ app.whenReady().then(() => {
   config.isServer = !config.SERVER_ADDRESS
   config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `http://localhost:3000`
   config.userDataPath = userDataPath
-  // 启动时检查一次更新
-  startAutoUpdate();
+  // 启动时检查一次更新（仅在非开发环境）
+  isPackaged && updater.startAutoUpdate();
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
