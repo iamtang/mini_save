@@ -1,19 +1,16 @@
 {
   "name": "mini_save",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "迷你保存",
   "main": "index.js",
   "scripts": {
-    "dev": "chcp 65001 && electron .",
+    "dev": "electron .",
     "start": "electron-builder --dir",
     "publish": "electron-builder --publish always",
     "clean": "electron-builder --clear-cache",
     "package": "NODE_ENV=production electron-builder --mac",
     "package-win": "set NODE_ENV=production && electron-builder --win",
-    "release": "node scripts/release.js",
-    "release:patch": "node scripts/release.js",
-    "release:minor": "node scripts/release.js",
-    "release:major": "node scripts/release.js"
+    "release": "node lib/electron-updater.js release"
   },
   "author": "iamtang",
   "license": "ISC",
@@ -42,7 +39,7 @@
       "main.js",
       "server.js",
       "onCopy.js",
-      "update.js",
+      "lib/electron-updater.js",
       "utils.js",
       "clipboard-macos.js",
       "config.json",

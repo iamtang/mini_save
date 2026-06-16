@@ -6,7 +6,7 @@ const userDataPath = app.getPath('userData');
 const log = require('electron-log/main');
 const onCopy = require('./onCopy.js')
 const Server = require('./server.js');
-const { startAutoUpdate } = require('./update.js');
+const { Updater } = require('./lib/electron-updater.js');
 
 // 配置日志文件最大为 5MB
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'main.log');
@@ -47,7 +47,8 @@ app.whenReady().then(() => {
   config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `http://localhost:3000`
   config.userDataPath = userDataPath
   // 启动时检查一次更新
-  startAutoUpdate();
+  const updater = new Updater({ app, log });
+  updater.startAutoUpdate();
   // 启动服务器
   config.isServer && startServer(config);
   onCopy(server, config)
