@@ -140,6 +140,8 @@ function getClipboardContent() {
 	// macOS: 尝试获取文件路径
 	if (process.platform === 'darwin') {
 		files = getMacOSFilePaths();
+	}else if(process.platform === 'win32'){
+		files = getWindowsFilePaths()
 	}
 
 	// 验证文件是否真实存在
@@ -153,7 +155,7 @@ function getClipboardContent() {
 
 	// 如果 macOS 方法没找到文件，或其他平台，尝试 Electron API
 	if (files.length === 0) {
-		const fileUrl = clipboard.read('public.file-url') || getWindowsFilePaths()[0];
+		const fileUrl = clipboard.read('public.file-url')
 		if (fileUrl) {
 			let filePath = fileUrl;
 			if (filePath.startsWith('file:///')) {
