@@ -1,4 +1,5 @@
 const { execSync } = require('child_process');
+const fs = require('fs');
 
 /**
  * 获取 macOS 剪贴板中的文件路径列表（方法1：AppleScript）
@@ -99,6 +100,33 @@ function getMacOSFilePaths() {
 	return [];
 }
 
+function getWindowsFilePaths() {
+    try {
+        // 使用单行 PowerShell 命令
+        const result = execSync(
+            `powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetFileDropList()"`,
+            { 
+                encoding: 'utf-8', 
+                timeout: 5000,
+                stdio: ['pipe', 'pipe', 'pipe']
+            }
+        );
+        
+        if (result && result.trim()) {
+            const paths = result.trim().split('\r\n')
+                .map(p => p.trim())
+                .filter(p => p && fs.existsSync(p) && fs.statSync(p).isFile());
+            if (paths.length > 0) {
+                return paths;
+            }
+        }
+        return [];
+    } catch (error) {
+        console.error('获取剪贴板文件失败:', error.message);
+        return [];
+    }
+}
+
 /**
  * 获取剪贴板内容（跨平台）
  * @returns {{files: string[], text: string|null}}
@@ -125,7 +153,7 @@ function getClipboardContent() {
 
 	// 如果 macOS 方法没找到文件，或其他平台，尝试 Electron API
 	if (files.length === 0) {
-		const fileUrl = clipboard.read('public.file-url');
+		const fileUrl = clipboard.read('public.file-url') || getWindowsFilePaths()[0];
 		if (fileUrl) {
 			let filePath = fileUrl;
 			if (filePath.startsWith('file:///')) {
