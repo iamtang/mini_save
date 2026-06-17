@@ -87,12 +87,12 @@ function getMacOSFilePathsJXA() {
  * 获取 macOS 剪贴板中的文件路径列表
  */
 function getMacOSFilePaths() {
-	let paths = getMacOSFilePathsJXA();
-	if (paths.length > 0) {
-		return paths;
-	}
+	// let paths = getMacOSFilePathsJXA();
+	// if (paths.length > 0) {
+	// 	return paths;
+	// }
 
-	paths = getMacOSFilePathsAppleScript();
+	const paths = getMacOSFilePathsAppleScript();
 	if (paths.length > 0) {
 		return paths;
 	}
