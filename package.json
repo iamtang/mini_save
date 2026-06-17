@@ -1,6 +1,6 @@
 {
   "name": "mini_save",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "迷你保存",
   "main": "index.js",
   "scripts": {
@@ -28,6 +28,13 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
+    "extraMetadata": {
+      "publish": {
+        "provider": "github",
+        "owner": "iamtang",
+        "repo": "mini_save"
+      }
+    },
     "productName": "迷你保存",
     "asar": true,
     "compression": "maximum",
@@ -56,11 +63,6 @@
     },
     "directories": {
       "output": "build-output"
-    },
-    "publish": {
-      "provider": "github",
-      "owner": "iamtang",
-      "repo": "mini_save"
     }
   }
 }

@@ -6,7 +6,6 @@ const log = require('electron-log/main');
 const onCopy = require('./onCopy.js')
 const Server = require('./server.js');
 const ElectronUpdater = require('./lib/electron-updater.js');
-const updater = new ElectronUpdater();
 
 // 检测是否是开发环境（app.isPackaged 在打包后为 true）
 const isPackaged = app.isPackaged;
@@ -45,6 +44,7 @@ function initConfig(){
 
 // Electron 启动
 app.whenReady().then(() => {
+  const updater = new ElectronUpdater();
   const config = initConfig()
   config.isServer = !config.SERVER_ADDRESS
   config.url = !config.isServer ? `${config.SERVER_ADDRESS}` : `http://localhost:3000`
