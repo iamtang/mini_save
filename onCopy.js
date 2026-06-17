@@ -2,6 +2,7 @@ const { clipboard, app, powerMonitor } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
+const { execSync } = require('child_process');
 const { downloadFile, uploadFile, ossInit, ossUpload, sleep, textUpload } = require('./utils.js')
 const { getClipboardContent } = require('./clipboard-macos.js')
 const log = require('electron-log/main');
@@ -132,8 +133,24 @@ function onMessage(msg, config){
                 // 使用与主循环相同的格式更新 preContent
                 preContent = JSON.stringify({ files: [`file://${res}`], text: null });
                 currentContent = preContent;
-                clipboard.writeBuffer('public.file-url', Buffer.from(`file://${res}`, 'utf-8'));
-                log.info('接收到同步文件:', fileName);
+
+                // 根据平台使用不同的方式写入剪切板
+                if (process.platform === 'win32') {
+                    // Windows: 需要使用 FileDrop 格式
+                    try {
+                        execSync(
+                            `powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $files = @('${res.replace(/\\/g, '\\\\')}'); [System.Windows.Forms.Clipboard]::SetFileDropList($files)"`,
+                            { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 }
+                        );
+                        log.info('接收到同步文件:', fileName);
+                    } catch (err) {
+                        log.info('写入剪切板失败:', err.message);
+                    }
+                } else {
+                    // macOS: 使用 public.file-url 格式
+                    clipboard.writeBuffer('public.file-url', Buffer.from(`file://${res}`, 'utf-8'));
+                    log.info('接收到同步文件:', fileName);
+                }
             })
             .catch((error) => {
                 log.info('下载文件失败:', downloadUrl, error.message);
