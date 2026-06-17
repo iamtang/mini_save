@@ -1,6 +1,6 @@
 {
   "name": "mini_save",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "迷你保存",
   "main": "index.js",
   "scripts": {
@@ -41,7 +41,7 @@
       "onCopy.js",
       "lib/electron-updater.js",
       "utils.js",
-      "clipboard-macos.js",
+      "clipboard.js",
       "config.json",
       "package.json"
     ],

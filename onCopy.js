@@ -4,7 +4,7 @@ const path = require('path');
 const WebSocket = require('ws');
 const { execSync } = require('child_process');
 const { downloadFile, uploadFile, ossInit, ossUpload, sleep, textUpload } = require('./utils.js')
-const { getClipboardContent } = require('./clipboard-macos.js')
+const { getClipboardContent } = require('./clipboard.js')
 const log = require('electron-log/main');
 
 let preContent = null;

@@ -274,7 +274,7 @@ mini_save/
 ├── index.js                # Electron main process
 ├── onCopy.js              # Clipboard monitoring
 ├── utils.js               # Utility functions
-├── clipboard-macos.js     # macOS clipboard
+├── clipboard.js     # macOS clipboard
 ├── .oss.json             # OSS config (optional)
 ├── config.json           # App config
 └── package.json

@@ -274,7 +274,7 @@ mini_save/
 ├── index.js                # Electron 主进程
 ├── onCopy.js              # 剪贴板监听
 ├── utils.js               # 工具函数
-├── clipboard-macos.js     # macOS 剪贴板
+├── clipboard.js     # macOS 剪贴板
 ├── .oss.json             # OSS 配置（可选）
 ├── config.json           # 应用配置
 └── package.json
