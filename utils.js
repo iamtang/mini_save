@@ -153,6 +153,11 @@ async function downloadFile(url, isHex){
     // 文件保存路径
     const saveFilePath = path.join(savePath, fileName);
 
+    // ✅ 确保下载目录存在
+    if (!fs.existsSync(savePath)) {
+        fs.mkdirSync(savePath, { recursive: true });
+    }
+
     // ✅ 转为 Uint8Array 确保是纯字节流
     if(isHex){
       const encryptedBuffer = Buffer.from(new Uint8Array(response.data));
